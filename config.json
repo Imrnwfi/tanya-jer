@@ -18,6 +18,12 @@
       "emoji": "🎬",
       "description": "Tutorial edit video TikTok & Reels",
       "order": 2
+    },
+    "sumbangan-tunai-rahmah-str": {
+      "name": "Sumbangan Tunai Rahmah STR",
+      "emoji": "💵",
+      "description": "Soalan berkaitan Sumbangan Tunai Rahmah",
+      "order": 3
     }
   }
 }
