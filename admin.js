@@ -1,7 +1,7 @@
 // TanyaJer — halaman admin.
 // Menyimpan app & fail FAQ terus ke repo GitHub melalui GitHub API (guna token pemilik),
 // kemudian GitHub Actions membina dan menerbitkan semula laman secara automatik.
-import { esc, parseCSV, rowsToFaq, parseJSONFaq, parseText, slugify } from './src/faq-core.js';
+import { esc, parseCSV, rowsToFaq, parseJSONFaq, parseText, pdfItemsToText, slugify } from './src/faq-core.js';
 
 const API = 'https://api.github.com';
 const SUPPORTED = ['csv', 'tsv', 'json', 'txt', 'md', 'markdown', 'docx', 'pdf'];
@@ -225,17 +225,9 @@ async function extractPdf(file) {
   await loadScript(PDFJS);
   const lib = window.pdfjsLib; lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
   const pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-  let out = '';
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const c = await (await pdf.getPage(p)).getTextContent(); let lastY = null;
-    for (const it of c.items) {
-      const y = it.transform ? it.transform[5] : null;
-      if (lastY !== null && y !== null && Math.abs(y - lastY) > 3) out += '\n';
-      out += it.str; if (it.hasEOL) { out += '\n'; lastY = null; } else lastY = y;
-    }
-    out += '\n\n';
-  }
-  return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+  const pages = [];
+  for (let p = 1; p <= pdf.numPages; p++) pages.push((await (await pdf.getPage(p)).getTextContent()).items);
+  return pdfItemsToText(pages);
 }
 async function parseLocal(file) {
   const ext = extOf(file.name);

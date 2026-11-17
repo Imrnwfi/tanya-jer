@@ -79,6 +79,7 @@ header.top .wrap{display:flex;align-items:center;gap:10px;height:58px}
 .bubble .sp{height:7px}
 .src{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px}
 .src.ai{color:var(--brand)}
+.src b{flex:none;font-weight:600;white-space:nowrap}
 .src span{color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .note{font-size:12px;color:var(--warn);background:var(--warn-soft);border-radius:9px;padding:6px 9px;margin-bottom:8px}
 .related{margin-top:10px;padding-top:9px;border-top:1px dashed var(--line)}

@@ -6,7 +6,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseCSV, rowsToFaq, parseJSONFaq, parseText, slugify } from '../src/faq-core.js';
+import { parseCSV, rowsToFaq, parseJSONFaq, parseText, pdfItemsToText, slugify } from '../src/faq-core.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FAQ_DIR = path.join(ROOT, 'faqs');
@@ -33,19 +33,9 @@ async function extractPdf(file) {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const data = new Uint8Array(await fs.readFile(file));
   const pdf = await pdfjs.getDocument({ data, isEvalSupported: false, useSystemFonts: true, verbosity: 0 }).promise;
-  let out = '';
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const c = await (await pdf.getPage(p)).getTextContent();
-    let lastY = null;
-    for (const it of c.items) {
-      const y = it.transform ? it.transform[5] : null;
-      if (lastY !== null && y !== null && Math.abs(y - lastY) > 3) out += '\n';
-      out += it.str;
-      if (it.hasEOL) { out += '\n'; lastY = null; } else lastY = y;
-    }
-    out += '\n\n';
-  }
-  return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+  const pages = [];
+  for (let p = 1; p <= pdf.numPages; p++) pages.push((await (await pdf.getPage(p)).getTextContent()).items);
+  return pdfItemsToText(pages);
 }
 
 async function parseFile(file) {

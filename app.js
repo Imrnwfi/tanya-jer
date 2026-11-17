@@ -100,7 +100,7 @@ function msgEl(m, app) {
   if (m.role === 'user') return el(`<div class="msg user"><div class="bubble">${esc(m.text)}</div></div>`);
   const faqs = app.faqs;
   let h = '';
-  if (m.from === 'faq') h += `<div class="src">📄 Dari FAQ<span>· ${esc(m.matchedQ)}</span></div>`;
+  if (m.from === 'faq') h += `<div class="src"><b>📄 Dari FAQ</b><span>· ${esc(m.matchedQ)}</span></div>`;
   h += `<div class="md">${md(m.text)}</div>`;
   if (m.suggestions?.length) {
     h += `<div style="margin-top:8px">${m.suggestions.map((i) => `<button class="chip" type="button" data-faq="${i}">${esc(faqs[i].q)}</button>`).join('')}</div>`;
@@ -130,10 +130,11 @@ function ask(text) {
   pushMsg(app, { role: 'user', text });
   const results = searchFaq(getIndex(app), text);
   const top = results[0], second = results[1]?.score || 0;
-  if (top && top.score >= 0.34 && top.score - second >= 0.08) {
+  // Jawab terus bila padanan jelas; jika dua soalan hampir sama kuat, tunjuk yang terbaik + soalan berkaitan.
+  if (top && top.score >= 0.3 && (top.score - second >= 0.06 || top.score >= 0.45)) {
     const f = app.faqs[top.i];
     pushMsg(app, { role: 'bot', from: 'faq', text: f.a, matchedQ: f.q,
-      related: results.slice(1, 4).filter((r) => r.score >= 0.22).map((r) => r.i) });
+      related: results.slice(1, 4).filter((r) => r.score >= 0.25).map((r) => r.i) });
   } else if (top && top.score >= 0.2) {
     pushMsg(app, { role: 'bot', from: 'maybe', text: 'Saya tak pasti, tapi mungkin salah satu soalan ini yang anda maksudkan:',
       suggestions: results.slice(0, 3).filter((r) => r.score >= 0.14).map((r) => r.i) });
