@@ -1,4 +1,4 @@
-# 💬 TanyaApp
+# <img src="icon.svg" width="32" height="32" alt=""> TanyaJer
 
 Web app soal jawab untuk penonton video tutorial. Setiap aplikasi (Canva, CapCut, dll.) ada FAQ sendiri. Penonton pilih aplikasi, taip soalan, dan app akan cari jawapan yang paling padan dalam FAQ, walaupun soalan ditulis secara santai (contohnya "cmne nk buang watermark").
 
@@ -12,7 +12,7 @@ Web app soal jawab untuk penonton video tutorial. Setiap aplikasi (Canva, CapCut
 
 1. Buka repo ini di GitHub, kemudian pergi ke **Settings → Pages**.
 2. Di bawah **Build and deployment → Source**, pilih **GitHub Actions**.
-3. Pergi ke tab **Actions**, pilih **Bina & terbit TanyaApp**, kemudian klik **Run workflow**.
+3. Pergi ke tab **Actions**, pilih **Bina & terbit TanyaJer**, kemudian klik **Run workflow**.
 4. Selepas siap (tanda ✅ hijau), laman anda boleh dibuka di:
    `https://<nama-pengguna>.github.io/<nama-repo>/`
 
@@ -80,7 +80,7 @@ Format juga dikesan secara automatik jika setiap soalan berakhir dengan tanda `?
 ```json
 {
   "site": {
-    "title": "TanyaApp",
+    "title": "TanyaJer",
     "heading": "Ada soalan tentang app dalam tutorial?",
     "tagline": "Pilih aplikasi, kemudian taip soalan anda.",
     "contactUrl": "https://www.youtube.com/@channelanda",

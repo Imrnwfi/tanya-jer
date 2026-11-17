@@ -1,4 +1,4 @@
-// TanyaApp — halaman admin.
+// TanyaJer — halaman admin.
 // Menyimpan app & fail FAQ terus ke repo GitHub melalui GitHub API (guna token pemilik),
 // kemudian GitHub Actions membina dan menerbitkan semula laman secara automatik.
 import { esc, parseCSV, rowsToFaq, parseJSONFaq, parseText, slugify } from './src/faq-core.js';

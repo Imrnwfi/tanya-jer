@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#0d9488"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <!-- gelembung chat -->
+  <path d="M168 104h176a72 72 0 0 1 72 72v120a72 72 0 0 1-72 72H252l-86 62a10 10 0 0 1-15.6-9.8L162 368a72 72 0 0 1-66-72V176a72 72 0 0 1 72-72z" fill="#fff"/>
+  <!-- tanda soal -->
+  <path d="M212 196a44 44 0 1 1 66 38c-14 8-22 16-22 32v6" fill="none" stroke="#4f46e5" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="318" r="18" fill="#4f46e5"/>
+</svg>

@@ -1,4 +1,4 @@
-// Bina laman TanyaApp: baca semua fail dalam folder faqs/, tukar jadi data/apps.json,
+// Bina laman TanyaJer: baca semua fail dalam folder faqs/, tukar jadi data/apps.json,
 // dan salin fail laman ke folder _site/ untuk diterbitkan ke GitHub Pages.
 //
 //   npm run build        -> bina _site/
@@ -104,7 +104,7 @@ async function main() {
   const list = [...apps.values()].sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
   const data = {
     site: {
-      title: String(site.title || 'TanyaApp'),
+      title: String(site.title || 'TanyaJer'),
       tagline: String(site.tagline || 'Pilih aplikasi, kemudian taip soalan anda. Jawapan diambil terus dari FAQ.'),
       heading: String(site.heading || 'Ada soalan tentang app dalam tutorial?'),
       contactUrl: String(site.contactUrl || ''),
@@ -117,7 +117,7 @@ async function main() {
   await fs.rm(OUT, { recursive: true, force: true });
   await fs.mkdir(path.join(OUT, 'data'), { recursive: true });
   await fs.mkdir(path.join(OUT, 'src'), { recursive: true });
-  for (const f of ['index.html', 'app.js', 'admin.html', 'admin.js', 'style.css']) {
+  for (const f of ['index.html', 'app.js', 'admin.html', 'admin.js', 'style.css', 'icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'manifest.webmanifest']) {
     await fs.copyFile(path.join(ROOT, f), path.join(OUT, f));
   }
   await fs.copyFile(path.join(ROOT, 'src', 'faq-core.js'), path.join(OUT, 'src', 'faq-core.js'));

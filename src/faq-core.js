@@ -1,4 +1,4 @@
-/* TanyaApp — logik teras (dikongsi oleh browser dan skrip build).
+/* TanyaJer — logik teras (dikongsi oleh browser dan skrip build).
    Mengandungi: penghurai fail FAQ, carian soalan, dan penukar markdown ringkas. */
 /* ======================= TEXT HELPERS ======================= */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}

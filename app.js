@@ -1,4 +1,4 @@
-// TanyaApp — antara muka pengguna (laman statik untuk GitHub Pages).
+// TanyaJer — antara muka pengguna (laman statik untuk GitHub Pages).
 // Data dibina oleh scripts/build.mjs ke dalam data/apps.json.
 import { esc, norm, buildIndex, searchFaq, md } from './src/faq-core.js';
 
@@ -34,7 +34,7 @@ function render() {
   $('#view-home').hidden = v !== 'home';
   $('#view-chat').hidden = v !== 'chat';
   const app = currentApp();
-  document.title = app ? `${app.name} · ${state.site.title || 'TanyaApp'}` : `${state.site.title || 'TanyaApp'} – Soal Jawab Tutorial`;
+  document.title = app ? `${app.name} · ${state.site.title || 'TanyaJer'}` : `${state.site.title || 'TanyaJer'} – Soal Jawab Tutorial`;
   if (v === 'home') renderHome(); else renderChat();
 }
 
