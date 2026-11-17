@@ -18,7 +18,26 @@ Web app soal jawab untuk penonton video tutorial. Setiap aplikasi (Canva, CapCut
 
 ---
 
-## ➕ Tambah atau kemas kini FAQ
+## ⚙️ Urus FAQ dari laman (paling mudah)
+
+Buka **`https://<nama-pengguna>.github.io/<nama-repo>/admin.html`** (atau tekan **⚙️ Urus FAQ** di bawah senarai app).
+
+- **+ Tambah app:** isi nama, emoji dan penerangan, pilih fail FAQ, kemudian tekan **Simpan & terbit**
+- **⬆️ Upload FAQ:** ganti FAQ lama, atau tambah fail baru dan kekalkan fail lama
+- **✏️ Edit:** tukar nama, emoji atau penerangan app
+- **Padam:** buang app dan fail FAQnya
+
+Sebelum disimpan, halaman ini tunjuk pratonton soalan yang dijumpai dalam fail. Selepas simpan, ia pantau penerbitan sehingga keluar mesej **✅ Dah live**.
+
+**Kali pertama sahaja**, halaman admin perlukan *fine-grained token* GitHub:
+1. Buka https://github.com/settings/personal-access-tokens/new
+2. **Repository access:** *Only select repositories*, kemudian pilih repo ini
+3. **Permissions:** **Contents** = *Read and write*, dan **Actions** = *Read-only*
+4. Klik **Generate token**, kemudian tampal token di halaman admin
+
+Token hanya disimpan dalam browser anda. Pengunjung lain tidak boleh mengubah apa-apa tanpa token. Jangan kongsi token anda dengan sesiapa.
+
+## ➕ Tambah atau kemas kini FAQ terus di GitHub
 
 1. Buka folder **`faqs/`** di GitHub.
 2. Klik **Add file → Upload files**, kemudian seret fail FAQ anda.
@@ -27,6 +46,7 @@ Web app soal jawab untuk penonton video tutorial. Setiap aplikasi (Canva, CapCut
 
 **Nama fail menjadi ID dan link app.** Contohnya, `faqs/canva.csv` akan menjadi `#canva`.
 Untuk mengemas kini FAQ, upload fail dengan nama yang sama (ia akan menggantikan fail lama). Untuk memadam app, padam failnya.
+Untuk menambah lebih dari satu fail bagi app yang sama, guna `__` dalam nama fail. Contohnya, `canva__bahagian2.pdf` akan digabungkan ke dalam `#canva`.
 
 ### Format fail yang disokong
 
@@ -97,7 +117,9 @@ npm run dev     # buka http://localhost:8080
 ```
 faqs/                 ← fail FAQ anda (satu fail = satu app)
 config.json           ← nama, ikon, tetapan laman
-index.html, app.js    ← antara muka
+index.html, app.js    ← antara muka penonton
+admin.html, admin.js  ← halaman urus FAQ (guna GitHub API)
+style.css             ← gaya dikongsi
 src/faq-core.js       ← penghurai fail + enjin carian
 scripts/build.mjs     ← tukar faqs/ → data/apps.json
 .github/workflows/    ← bina & terbit automatik ke GitHub Pages

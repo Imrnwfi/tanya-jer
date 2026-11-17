@@ -74,7 +74,8 @@ async function main() {
     if (name.startsWith('.') || name.startsWith('_') || /^readme/i.test(name)) continue;
     const ext = path.extname(name).toLowerCase();
     if (!SUPPORTED.includes(ext)) { warn(`faqs/${name} dilangkau — format ${ext || '(tiada)'} tidak disokong.`); continue; }
-    const base = path.basename(name, path.extname(name));
+    // canva.csv -> #canva. Fail tambahan untuk app yang sama: canva__bahagian2.pdf -> #canva
+    const base = path.basename(name, path.extname(name)).split('__')[0];
     const id = slugify(base);
     let pairs = [];
     try { pairs = await parseFile(path.join(FAQ_DIR, name)); }
@@ -116,8 +117,9 @@ async function main() {
   await fs.rm(OUT, { recursive: true, force: true });
   await fs.mkdir(path.join(OUT, 'data'), { recursive: true });
   await fs.mkdir(path.join(OUT, 'src'), { recursive: true });
-  await fs.copyFile(path.join(ROOT, 'index.html'), path.join(OUT, 'index.html'));
-  await fs.copyFile(path.join(ROOT, 'app.js'), path.join(OUT, 'app.js'));
+  for (const f of ['index.html', 'app.js', 'admin.html', 'admin.js', 'style.css']) {
+    await fs.copyFile(path.join(ROOT, f), path.join(OUT, f));
+  }
   await fs.copyFile(path.join(ROOT, 'src', 'faq-core.js'), path.join(OUT, 'src', 'faq-core.js'));
   await fs.writeFile(path.join(OUT, 'data', 'apps.json'), JSON.stringify(data));
   await fs.writeFile(path.join(OUT, '.nojekyll'), '');
