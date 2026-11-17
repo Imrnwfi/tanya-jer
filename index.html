@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TanyaApp – Soal Jawab Tutorial</title>
+<meta name="description" content="Tanya soalan tentang aplikasi dalam video tutorial. Jawapan diambil terus dari FAQ.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6fb;--card:#ffffff;--ink:#0f172a;--muted:#64748b;--line:#e6e8f0;
+  --brand:#4f46e5;--brand-ink:#ffffff;--brand-soft:#eef0ff;--accent:#0d9488;--accent-soft:#e6f6f4;
+  --warn:#b45309;--warn-soft:#fff7e6;--danger:#dc2626;--danger-soft:#fdecec;
+  --shadow:0 1px 2px rgba(15,23,42,.05),0 6px 20px rgba(15,23,42,.05);
+  --radius:16px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0b1020;--card:#141a2e;--ink:#e7eaf3;--muted:#94a0b8;--line:#252d48;
+    --brand:#7c83ff;--brand-ink:#0b1020;--brand-soft:#1d2348;--accent:#2dd4bf;--accent-soft:#10302d;
+    --warn:#fbbf24;--warn-soft:#2e2510;--danger:#f87171;--danger-soft:#341818;--shadow:none}
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;color:inherit}
+input,textarea,select{font:inherit;color:inherit}
+a{color:var(--brand)}
+.wrap{max-width:780px;margin:0 auto;padding:0 16px}
+.muted{color:var(--muted)}
+/* header */
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:10px;height:58px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;letter-spacing:-.01em;background:none;border:0;padding:0}
+.brand .logo{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--accent));color:#fff;font-size:16px}
+.spacer{flex:1}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:11px;padding:8px 13px;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:color-mix(in srgb,var(--brand) 40%,var(--line))}
+.btn.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn.danger.confirm{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:9px}
+/* home */
+.hero{padding:30px 0 14px}
+.hero h1{font-size:clamp(24px,5vw,32px);line-height:1.2;margin:0 0 8px;letter-spacing:-.02em}
+.hero p{margin:0;color:var(--muted)}
+.search{position:relative;margin:18px 0 18px}
+.search input{width:100%;padding:13px 14px 13px 42px;border-radius:14px;border:1px solid var(--line);background:var(--card);outline:none;box-shadow:var(--shadow)}
+.search input:focus{border-color:var(--brand)}
+.search .ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;padding-bottom:40px}
+.app-card{text-align:left;border:1px solid var(--line);background:var(--card);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow);transition:transform .12s,border-color .12s}
+.app-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--brand) 45%,var(--line))}
+.app-card .emo{font-size:28px;width:48px;height:48px;border-radius:13px;display:grid;place-items:center;background:var(--brand-soft);margin-bottom:6px}
+.app-card .nm{font-weight:700;font-size:16px}
+.app-card .ds{color:var(--muted);font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.app-card .ct{margin-top:6px;font-size:12px;font-weight:600;color:var(--accent)}
+.empty{border:1.5px dashed var(--line);border-radius:var(--radius);padding:34px 20px;text-align:center;color:var(--muted)}
+.empty .big{font-size:34px;margin-bottom:6px}
+.skel{height:132px;border-radius:var(--radius);background:linear-gradient(90deg,var(--card),var(--line),var(--card));background-size:200% 100%;animation:sh 1.3s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.notice{border-radius:14px;padding:12px 14px;background:var(--warn-soft);color:var(--warn);font-size:14px;margin:12px 0}
+/* chat */
+.chat-head{position:sticky;top:58px;z-index:10;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.chat-head .back{border:0;background:var(--card);border:1px solid var(--line);width:36px;height:36px;border-radius:10px;font-size:17px;flex:none}
+.chat-head .emo{font-size:22px;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--brand-soft);flex:none}
+.chat-head .ttl{min-width:0;flex:1}
+.chat-head .ttl b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-head .sub{font-size:12px;color:var(--muted)}
+.ai-toggle{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card)}
+.ai-toggle input{appearance:none;width:30px;height:18px;border-radius:999px;background:var(--line);position:relative;margin:0;cursor:pointer;transition:background .15s}
+.ai-toggle input::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.ai-toggle input:checked{background:var(--brand)}
+.ai-toggle input:checked::after{left:14px}
+.msgs{padding:18px 0 8px;display:flex;flex-direction:column;gap:12px;min-height:calc(100dvh - 58px - 65px - 150px)}
+.msg{display:flex}
+.msg.user{justify-content:flex-end}
+.bubble{max-width:min(88%,620px);padding:11px 14px;border-radius:16px;word-wrap:break-word;overflow-wrap:anywhere}
+.msg.user .bubble{background:var(--brand);color:var(--brand-ink);border-bottom-right-radius:5px}
+.msg.bot .bubble{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:5px;box-shadow:var(--shadow)}
+.bubble p{margin:0}
+.bubble ul,.bubble ol{margin:4px 0;padding-left:22px}
+.bubble li{margin:2px 0}
+.bubble .sp{height:7px}
+.src{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px}
+.src.ai{color:var(--brand)}
+.src span{color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.note{font-size:12px;color:var(--warn);background:var(--warn-soft);border-radius:9px;padding:6px 9px;margin-bottom:8px}
+.related{margin-top:10px;padding-top:9px;border-top:1px dashed var(--line)}
+.related .lbl{font-size:12px;color:var(--muted);margin-bottom:6px}
+.chip{display:inline-block;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:7px 11px;font-size:13px;margin:0 6px 6px 0;line-height:1.35}
+.chip:hover{border-color:var(--brand);color:var(--brand)}
+.chip.ai{background:var(--brand-soft);border-color:transparent;color:var(--brand);font-weight:600}
+.thinking{display:inline-flex;gap:4px;align-items:center;color:var(--muted);font-size:14px}
+.dots span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:3px;animation:bl 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes bl{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.composer{position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 78%,transparent);padding:10px 0 calc(12px + env(safe-area-inset-bottom))}
+.composer .chips{margin-bottom:6px}
+.composer form{display:flex;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px;box-shadow:var(--shadow)}
+.composer form:focus-within{border-color:var(--brand)}
+.composer input{flex:1;border:0;outline:none;background:transparent;padding:8px 8px;min-width:0}
+.composer .send{width:42px;height:42px;border-radius:12px;border:0;background:var(--brand);color:var(--brand-ink);font-size:17px;flex:none}
+.composer .send.stop{background:var(--ink);color:var(--bg)}
+.foot-note{font-size:12px;color:var(--muted);text-align:center;margin-top:7px}
+/* sheet */
+.sheet{position:fixed;inset:0;z-index:50;background:rgba(10,14,30,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet-card{background:var(--card);width:100%;max-width:780px;max-height:86dvh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden}
+.sheet-head{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.sheet-head b{flex:1}
+.sheet-body{padding:12px 16px 24px;overflow:auto}
+.sheet-body input{width:100%;padding:10px 12px;border-radius:11px;border:1px solid var(--line);background:var(--bg);margin-bottom:10px;outline:none}
+details.faq{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--bg)}
+details.faq summary{padding:11px 13px;font-weight:600;cursor:pointer;list-style:none}
+details.faq summary::-webkit-details-marker{display:none}
+details.faq[open] summary{border-bottom:1px solid var(--line)}
+details.faq .ans{padding:10px 13px}
+details.faq .ans p{margin:0}
+details.faq .ans ul,details.faq .ans ol{margin:4px 0;padding-left:22px}
+.contact{margin-top:10px}
+.foot{color:var(--muted);font-size:12px;text-align:center;padding:10px 0 30px}
+@media (max-width:520px){.chat-head .btn .t{display:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <button class="brand" id="brand" type="button"><span class="logo">💬</span><span id="site-title">TanyaApp</span></button>
+  </div>
+</header>
+
+<main>
+  <!-- HALAMAN UTAMA: senarai aplikasi -->
+  <section id="view-home" class="wrap">
+    <div class="hero">
+      <h1 id="site-heading">Ada soalan tentang app dalam tutorial?</h1>
+      <p id="site-tagline">Pilih aplikasi, kemudian taip soalan anda. Jawapan diambil terus dari FAQ.</p>
+    </div>
+    <div id="home-notice"></div>
+    <div class="search"><span class="ic">🔎</span><input id="home-search" type="search" placeholder="Cari aplikasi…" autocomplete="off" aria-label="Cari aplikasi"></div>
+    <div id="app-grid" class="grid"></div>
+  </section>
+
+  <!-- HALAMAN SOAL JAWAB -->
+  <section id="view-chat" class="wrap" hidden>
+    <div id="chat-missing" hidden></div>
+    <div id="chat-main">
+      <div class="chat-head">
+        <button class="back" id="chat-back" type="button" aria-label="Kembali">←</button>
+        <div class="emo" id="chat-emo">📱</div>
+        <div class="ttl"><b id="chat-name"></b><div class="sub" id="chat-sub"></div></div>
+        <button class="btn sm" id="btn-allfaq" type="button">📋<span class="t"> Semua FAQ</span></button>
+      </div>
+      <div id="msgs" class="msgs" aria-live="polite"></div>
+      <div class="composer">
+        <div id="chips" class="chips"></div>
+        <form id="ask-form" autocomplete="off">
+          <input id="ask-input" placeholder="Taip soalan anda…" maxlength="300" aria-label="Soalan anda">
+          <button class="send" id="ask-btn" type="submit" aria-label="Hantar">➤</button>
+        </form>
+        <div class="foot-note">📄 Jawapan diambil terus dari FAQ</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-card" role="dialog" aria-label="Semua FAQ">
+    <div class="sheet-head"><b id="sheet-title">Semua FAQ</b><button class="btn sm" id="sheet-close" type="button">✕ Tutup</button></div>
+    <div class="sheet-body">
+      <input id="sheet-search" type="search" placeholder="Cari dalam FAQ…" autocomplete="off" aria-label="Cari dalam FAQ">
+      <div id="sheet-list"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

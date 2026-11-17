@@ -1,0 +1,26 @@
+S: Macam mana nak buang watermark CapCut di hujung video?
+J: Klip penutup (ending) CapCut boleh dipadam: skrol ke hujung timeline, pilih klip ending, kemudian tekan **Delete**. Anda juga boleh matikan pilihan *Add default ending* dalam Settings.
+
+S: Macam mana nak buat auto caption?
+J: 1. Pergi ke **Text → Auto captions**.
+2. Pilih bahasa percakapan dalam video.
+3. Tekan **Generate** dan tunggu sebentar.
+4. Semak dan betulkan perkataan yang salah.
+
+S: Macam mana nak tukar saiz video untuk TikTok atau Reels?
+J: Tekan **Ratio** (atau Format) dan pilih **9:16**. Ini saiz menegak untuk TikTok, Reels dan YouTube Shorts.
+
+S: Macam mana nak masukkan lagu dalam video?
+J: Tekan **Audio → Sounds** untuk pilih lagu dari library CapCut, atau **Extract** untuk ambil audio dari video lain. Berhati-hati dengan lagu berhak cipta jika video untuk tujuan komersial.
+
+S: Setting export apa yang terbaik?
+J: Pilih resolusi **1080p** (atau 4K jika ada), frame rate **30 fps** (atau 60 fps untuk gerakan laju). Ini sesuai untuk TikTok, Reels dan YouTube.
+
+S: Kenapa video jadi kabur selepas export?
+J: Biasanya kerana resolusi export terlalu rendah atau video asal berkualiti rendah. Export pada 1080p ke atas, dan elak hantar video melalui WhatsApp sebelum upload kerana ia akan dimampatkan.
+
+S: Macam mana nak buat slow motion?
+J: Pilih klip, tekan **Speed → Normal**, kemudian tarik kelajuan ke bawah 1x (contohnya 0.5x). Guna **Curve** untuk kesan slow motion yang lebih lancar.
+
+S: Boleh guna CapCut di laptop atau PC?
+J: Boleh. CapCut ada versi desktop untuk Windows dan Mac, serta versi web yang boleh dibuka melalui browser.

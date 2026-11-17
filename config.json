@@ -1,0 +1,23 @@
+{
+  "site": {
+    "title": "TanyaApp",
+    "heading": "Ada soalan tentang app dalam tutorial?",
+    "tagline": "Pilih aplikasi, kemudian taip soalan anda. Jawapan diambil terus dari FAQ.",
+    "contactUrl": "",
+    "contactLabel": "Tanya di ruangan komen YouTube"
+  },
+  "apps": {
+    "canva": {
+      "name": "Canva",
+      "emoji": "🎨",
+      "description": "Tutorial design poster, thumbnail & media sosial",
+      "order": 1
+    },
+    "capcut": {
+      "name": "CapCut",
+      "emoji": "🎬",
+      "description": "Tutorial edit video TikTok & Reels",
+      "order": 2
+    }
+  }
+}
