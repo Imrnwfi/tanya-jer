@@ -46,16 +46,14 @@ function notice() {
 function renderHome() {
   $('#home-notice').innerHTML = notice();
   const grid = $('#app-grid');
-  if (state.status === 'loading') { grid.innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>'; return; }
+  if (state.status === 'loading') { grid.innerHTML = '<div class="skel"></div>'.repeat(4); return; }
   if (state.status === 'error') { grid.innerHTML = ''; return; }
   const q = norm($('#home-search').value);
-  const list = state.apps.filter((a) => !q || norm(`${a.name} ${a.description}`).includes(q));
+  const list = state.apps.filter((a) => !q || norm(a.name).includes(q));
   if (!state.apps.length) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="big">📭</div>Belum ada aplikasi lagi.</div>'; return; }
   if (!list.length) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Tiada aplikasi sepadan dengan carian.</div>'; return; }
-  grid.innerHTML = list.map((a) => `<a class="app-card" href="#${encodeURIComponent(a.id)}" style="text-decoration:none;color:inherit">
-      <span class="emo">${esc(a.emoji)}</span><span class="nm">${esc(a.name)}</span>
-      ${a.description ? `<span class="ds">${esc(a.description)}</span>` : ''}
-      <span class="ct">${a.faqs.length} soalan</span></a>`).join('');
+  grid.innerHTML = list.map((a) => `<a class="app-tab" href="#${encodeURIComponent(a.id)}" title="${esc(a.name)}">
+      <span class="emo">${esc(a.emoji)}</span><span class="nm">${esc(a.name)}</span></a>`).join('');
 }
 
 /* ---------------- Soal jawab ---------------- */
