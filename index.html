@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>TanyaJer – Soal Jawab Tutorial</title>
-<meta name="description" content="Tanya soalan tentang aplikasi dalam video tutorial. Jawapan diambil terus dari FAQ.">
+<meta name="description" content="Tanya soalan tentang aplikasi dalam video tutorial. Jawapan ringkas terus dari FAQ.">
+<meta property="og:title" content="TanyaJer – Soal Jawab Tutorial">
+<meta property="og:description" content="Tanya soalan tentang aplikasi dalam video tutorial. Jawapan ringkas terus dari FAQ.">
+<meta property="og:image" content="icon-512.png">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -30,8 +33,11 @@
       <p id="site-tagline">Pilih aplikasi, kemudian taip soalan anda. Jawapan diambil terus dari FAQ.</p>
     </div>
     <div id="home-notice"></div>
-    <div class="search"><span class="ic">🔎</span><input id="home-search" type="search" placeholder="Cari aplikasi…" autocomplete="off" aria-label="Cari aplikasi"></div>
+    <div class="search"><span class="ic">🔎</span><input id="home-search" type="search" placeholder="Cari app atau taip soalan…" autocomplete="off" aria-label="Cari app atau taip soalan" enterkeyhint="search"></div>
+    <div id="home-results"></div>
+    <div id="cat-tabs" class="cats" role="tablist" aria-label="Kategori"></div>
     <div id="app-grid" class="grid"></div>
+    <!--SEO_LINKS-->
     <footer class="foot"><a href="admin.html">⚙️ Urus FAQ</a></footer>
   </section>
 
@@ -43,6 +49,7 @@
         <button class="back" id="chat-back" type="button" aria-label="Kembali">←</button>
         <div class="emo" id="chat-emo">📱</div>
         <div class="ttl"><b id="chat-name"></b><div class="sub" id="chat-sub"></div></div>
+        <a class="btn sm" id="btn-video" href="#" target="_blank" rel="noopener noreferrer" hidden style="text-decoration:none">▶️<span class="t"> Tonton</span></a>
         <button class="btn sm" id="btn-allfaq" type="button">📋<span class="t"> Semua FAQ</span></button>
       </div>
       <div id="msgs" class="msgs" aria-live="polite"></div>

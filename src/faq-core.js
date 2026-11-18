@@ -298,6 +298,30 @@ function slugify(s){
   if(RESERVED.has(x)||x.startsWith('comment-')) x+='-app';
   return x;
 }
+
+/* ======================= VIDEO & PAUTAN ======================= */
+// Link video pada saat tertentu. YouTube: ?t=222  · lain-lain: #t=222
+function videoAt(url, sec){
+  try{
+    const u=new URL(url);
+    if(/(^|\.)youtu\.be$/i.test(u.hostname) || /(^|\.)youtube\.com$/i.test(u.hostname)){ u.searchParams.set('t', String(sec)); return u.href; }
+    u.hash='t='+sec; return u.href;
+  }catch{ return ''; }
+}
+// Tukar "minit 03:42" dalam jawapan (HTML yang sudah di-escape) kepada link ke video tutorial
+function linkTimes(html, video){
+  if(!video || !/^https?:\/\//i.test(video)) return html;
+  return html.replace(/(<a\b[^>]*>.*?<\/a>)|\b((?:minit|minute|min)\.?\s*)(\d{1,2}):([0-5]\d)\b/gi, (m, a, w, mm, ss) => {
+    if(a) return a;
+    const href=videoAt(video, Number(mm)*60+Number(ss));
+    return href ? `<a class="ts" href="${esc(href)}" target="_blank" rel="noopener noreferrer">▶ ${w}${mm}:${ss}</a>` : m;
+  });
+}
+// ID tetap untuk setiap soalan (dipakai untuk link kongsi & halaman FAQ)
+function faqAnchors(faqs){
+  const seen=new Map();
+  return faqs.map(f=>{ let k='q-'+(slugify(f.q).replace(/-app$/,'').slice(0,50).replace(/-+$/,'')||'soalan'); const n=(seen.get(k)||0)+1; seen.set(k,n); return n>1?`${k}-${n}`:k; });
+}
 /* ======================= MINI MARKDOWN ======================= */
 function md(src){
   const inline = s => s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
@@ -316,4 +340,4 @@ function md(src){
   close(); return html.replace(/(<div class="sp"><\/div>)+$/,'');
 }
 
-export { esc, norm, uniq, tokenize, wordSim, bestSim, buildIndex, searchFaq, parseCSV, rowsToFaq, normalizePairs, parseJSONFaq, parseText, reflow, pdfItemsToText, md, slugify };
+export { esc, norm, uniq, tokenize, wordSim, bestSim, buildIndex, searchFaq, parseCSV, rowsToFaq, normalizePairs, parseJSONFaq, parseText, reflow, pdfItemsToText, md, slugify, videoAt, linkTimes, faqAnchors };

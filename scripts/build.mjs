@@ -6,8 +6,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseCSV, rowsToFaq, parseJSONFaq, parseText, pdfItemsToText, slugify } from '../src/faq-core.js';
+import { execFileSync } from 'node:child_process';
+import { parseCSV, rowsToFaq, parseJSONFaq, parseText, pdfItemsToText, slugify, faqAnchors } from '../src/faq-core.js';
 import { summarizeAll } from './summarize.mjs';
+import { writePages } from './pages.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FAQ_DIR = path.join(ROOT, 'faqs');
@@ -48,6 +50,14 @@ async function parseFile(file) {
   return parseText(await fs.readFile(file, 'utf8'));
 }
 
+// Tarikh commit terakhir sesuatu fail (YYYY-MM-DD), untuk "Dikemas kini"
+function gitDate(file) {
+  try { return execFileSync('git', ['log', '-1', '--format=%cs', '--', file], { cwd: ROOT, encoding: 'utf8' }).trim(); }
+  catch { return ''; }
+}
+const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ''));
+const isUrl = (s) => /^https?:\/\/\S+$/i.test(String(s || '').trim());
+
 function titleCase(s) {
   return s.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\p{L}/gu, (c) => c.toUpperCase());
 }
@@ -79,9 +89,15 @@ async function main() {
       name: String(m.name || titleCase(base)),
       emoji: String(m.emoji || '📱'),
       description: String(m.description || ''),
+      category: String(m.category || '').trim(),
+      video: isUrl(m.video) ? String(m.video).trim() : '',
+      source: String(m.source || '').trim(),
+      updated: isDate(m.updated) ? m.updated : '',
       order: Number.isFinite(m.order) ? m.order : 1000,
       faqs: [],
+      _dates: [],
     };
+    app._dates.push(gitDate(path.join('faqs', name)));
     const seen = new Set(app.faqs.map((f) => f.q.toLowerCase()));
     for (const p of pairs) if (!seen.has(p.q.toLowerCase())) { seen.add(p.q.toLowerCase()); app.faqs.push(p); }
     apps.set(id, app);
@@ -93,6 +109,11 @@ async function main() {
   }
 
   const list = [...apps.values()].sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+  for (const app of list) {
+    if (!app.updated) app.updated = app._dates.filter(Boolean).sort().pop() || '';
+    delete app._dates;
+    faqAnchors(app.faqs).forEach((k, i) => { app.faqs[i].k = k; });
+  }
   await summarizeAll(list, { root: ROOT, warn });
   const data = {
     site: {
@@ -101,6 +122,7 @@ async function main() {
       heading: String(site.heading || 'Ada soalan tentang app dalam tutorial?'),
       contactUrl: String(site.contactUrl || ''),
       contactLabel: String(site.contactLabel || 'Tanya terus kepada saya'),
+      feedbackUrl: isUrl(site.feedbackUrl) ? String(site.feedbackUrl).trim() : '',
     },
     builtAt: new Date().toISOString(),
     apps: list,
@@ -113,8 +135,14 @@ async function main() {
     await fs.copyFile(path.join(ROOT, f), path.join(OUT, f));
   }
   await fs.copyFile(path.join(ROOT, 'src', 'faq-core.js'), path.join(OUT, 'src', 'faq-core.js'));
+  await fs.mkdir(path.join(OUT, 'vendor'), { recursive: true });
+  await fs.copyFile(path.join(ROOT, 'vendor', 'qrcode.js'), path.join(OUT, 'vendor', 'qrcode.js'));
   await fs.writeFile(path.join(OUT, 'data', 'apps.json'), JSON.stringify(data));
   await fs.writeFile(path.join(OUT, '.nojekyll'), '');
+  // SITE_URL diberi oleh GitHub Actions (contoh https://nama.github.io/repo/)
+  let siteUrl = String(process.env.SITE_URL || '').trim();
+  if (siteUrl && !siteUrl.endsWith('/')) siteUrl += '/';
+  await writePages(OUT, data, siteUrl);
 
   const total = list.reduce((n, a) => n + a.faqs.length, 0);
   console.log(`\nSiap: ${list.length} aplikasi, ${total} soalan → _site/`);

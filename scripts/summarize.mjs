@@ -32,7 +32,7 @@ export function extractive(a) {
   for (const x of sentences) { if (s && (s + ' ' + x).length > SHORT) break; s = s ? `${s} ${x}` : x; }
   s = clip(s || first, SHORT + 40);
   const p = String(a).split('\n').map((l) => l.trim()).filter((l) => l && l.length >= 12)
-    .map((l) => l.replace(LIST_START, '').trim()).filter((l) => l !== s).slice(0, 12).map((l) => clip(l, 220));
+    .map((l) => l.replace(LIST_START, '').trim()).filter((l, k, arr) => l !== s && arr.indexOf(l) === k).slice(0, 12).map((l) => clip(l, 220));
   return { s, p, ai: false };
 }
 

@@ -182,3 +182,43 @@ details.full summary::-webkit-details-marker{display:none}
 details.full summary::after{content:"▾";font-size:11px}
 details.full[open] summary::after{content:"▴"}
 details.full .md{margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-size:14px}
+
+/* ---- kategori & carian laman utama ---- */
+.cats{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;color:var(--muted)}
+.cat.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+#home-results:not(:empty){margin:-6px 0 16px}
+.res-head{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px 2px}
+.res{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px 10px;margin-bottom:6px}
+.res:hover{border-color:var(--brand)}
+.res .emo{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--brand-soft);font-size:16px}
+.res-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.res-txt b{font-weight:600;font-size:14px;line-height:1.3}
+.res-txt span{font-size:12px;color:var(--muted)}
+.res .go{color:var(--muted);font-size:20px}
+.seo-links{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 0;line-height:1.8}
+.seo-links a{color:var(--muted)}
+/* ---- tindakan pada jawapan ---- */
+.acts{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:12px;color:var(--muted)}
+.acts .lbl{margin-right:2px}
+.act{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:3px 9px;font-size:13px;line-height:1.4}
+.act:hover{border-color:var(--brand)}
+.act.share{margin-left:auto;font-size:12px;font-weight:600;color:var(--brand)}
+.thanks{color:var(--accent);font-weight:600}
+.share-row{margin-top:8px}
+.share-row .chip{text-decoration:none;color:inherit}
+.src-meta{font-size:12px;color:var(--muted);margin-top:6px}
+a.ts{font-weight:600;text-decoration:none;background:var(--brand-soft);border-radius:6px;padding:0 5px;white-space:nowrap}
+/* ---- halaman FAQ statik ---- */
+.faq-page .emo-lg{font-size:30px;width:56px;height:56px;border-radius:15px;display:grid;place-items:center;background:var(--brand-soft);margin-bottom:10px}
+.faq-page .meta{font-size:13px;margin-top:6px}
+.faq-page details.faq{background:var(--card)}
+.faq-page details.faq summary h2{display:inline;font-size:15px;font-weight:600;margin:0;line-height:1.4}
+.faq-page details.faq:target,.faq-page details.faq[open]{border-color:color-mix(in srgb,var(--brand) 40%,var(--line))}
+.faq-page .ans p{margin:0}
+.faq-page .ans .sp{height:7px}
+/* ---- admin: QR ---- */
+.qr-box{text-align:center}
+.qr-box canvas{width:min(280px,100%);height:auto;border-radius:14px;border:1px solid var(--line);background:#fff}
+.faq-page details.faq{scroll-margin-top:72px}

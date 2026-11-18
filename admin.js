@@ -114,6 +114,7 @@ function allApps() {
   return ids.map((id) => {
     const meta = S.config.apps[id] || {};
     return { id, name: meta.name || titleCase(id), emoji: meta.emoji || '📱', description: meta.description || '',
+      category: meta.category || '', video: meta.video || '', source: meta.source || '', updated: meta.updated || '',
       order: Number.isFinite(meta.order) ? meta.order : 1000, files: S.files.filter((f) => f.id === id) };
   }).sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
 }
@@ -126,12 +127,13 @@ function renderList() {
       : live != null ? `${live} soalan di laman` : 'Belum diterbitkan';
     return `<div class="arow">
       <div class="emo">${esc(a.emoji)}</div>
-      <div class="inf"><b>${esc(a.name)}</b><div class="muted" style="font-size:13px">${info}</div>
+      <div class="inf"><b>${esc(a.name)}</b><div class="muted" style="font-size:13px">${info}${a.category ? ` · 🏷️ ${esc(a.category)}` : ''}${a.video ? ' · ▶️ video' : ''}</div>
         <div class="files">${a.files.map((f) => '📄 ' + esc(f.name)).join(' · ')}</div></div>
       <div class="row">
         <button class="btn sm" type="button" data-upload="${esc(a.id)}">⬆️ Upload FAQ</button>
         <button class="btn sm" type="button" data-edit="${esc(a.id)}">✏️ Edit</button>
         <button class="btn sm" type="button" data-copy="${esc(a.id)}">🔗 Link</button>
+        <button class="btn sm" type="button" data-qr="${esc(a.id)}">🔳 QR</button>
         <button class="btn sm danger" type="button" data-del="${esc(a.id)}">Padam</button>
       </div></div>`;
   }).join('') : '<div class="empty">Belum ada aplikasi. Tekan <b>+ Tambah app</b> untuk mula.</div>';
@@ -271,7 +273,14 @@ function openEditor(mode, id) {
       <label class="f">Ikon (emoji)<input id="e-emoji" value="${esc(app?.emoji || '📱')}" maxlength="8"></label>
       <label class="f">ID untuk link<input id="e-id" value="${esc(app?.id || '')}" placeholder="canva" ${mode === 'new' ? '' : 'disabled'}><div class="hint">Link: …/#${esc(app?.id || 'id')}</div></label>
     </div>
-    <label class="f">Penerangan ringkas (pilihan)<input id="e-desc" value="${esc(app?.description || '')}" placeholder="cth: Tutorial design poster & thumbnail" maxlength="140"></label>`;
+    <label class="f">Penerangan ringkas (pilihan)<input id="e-desc" value="${esc(app?.description || '')}" placeholder="cth: Tutorial design poster & thumbnail" maxlength="140"></label>
+    <label class="f">Kategori (pilihan)<input id="e-cat" list="cat-list" value="${esc(app?.category || '')}" placeholder="cth: Kerajaan, Design, Video" maxlength="30">
+      <datalist id="cat-list">${uniqCats().map((c) => `<option value="${esc(c)}">`).join('')}</datalist><div class="hint">App dengan kategori sama dikumpulkan dalam tab yang sama di laman utama.</div></label>
+    <label class="f">Link video tutorial (pilihan)<input id="e-video" type="url" inputmode="url" value="${esc(app?.video || '')}" placeholder="https://youtu.be/…"><div class="hint">Butang ▶️ Tonton akan muncul. Tulis "minit 03:42" dalam jawapan FAQ untuk link terus ke minit itu.</div></label>
+    <div class="grid2" style="grid-template-columns:1fr 160px">
+      <label class="f">Sumber maklumat (pilihan)<input id="e-source" value="${esc(app?.source || '')}" placeholder="cth: LHDN" maxlength="80"></label>
+      <label class="f">Tarikh kemas kini<input id="e-updated" type="date" value="${esc(app?.updated || '')}"><div class="hint">Kosong = tarikh upload</div></label>
+    </div>`;
   const hasFiles = app && app.files.length;
   const upload = mode === 'edit' ? '' : `
     <h3>Fail FAQ</h3>
@@ -325,12 +334,16 @@ async function saveEditor() {
       if (ed.mode === 'new' && allApps().some((a) => a.id === id)) throw new Error(`ID "${id}" sudah digunakan. Tukar ID.`);
       const emoji = $('#e-emoji').value.trim() || '📱';
       const description = $('#e-desc').value.trim();
+      const extra = { category: $('#e-cat').value.trim(), video: $('#e-video').value.trim(), source: $('#e-source').value.trim(), updated: $('#e-updated').value };
+      if (extra.video && !/^https?:\/\/\S+$/i.test(extra.video)) throw new Error('Link video mesti bermula dengan https://');
       status('Menyimpan maklumat app…');
       lastSha = await saveConfig((cfg) => {
         const prev = cfg.apps[id] || {};
         const order = Number.isFinite(prev.order) ? prev.order
           : Math.max(0, ...Object.values(cfg.apps).map((a) => Number(a?.order) || 0)) + 1;
-        cfg.apps[id] = { ...prev, name, emoji, description, order };
+        const next = { ...prev, name, emoji, description, order };
+        for (const [k, v] of Object.entries(extra)) { if (v) next[k] = v; else delete next[k]; }
+        cfg.apps[id] = next;
       }, `${ed.mode === 'new' ? 'Tambah' : 'Kemas kini'} app: ${name}`);
       ed.id = id;
     }
@@ -346,6 +359,111 @@ async function saveEditor() {
     status('⚠️ ' + errMsg(e), 'err');
   } finally {
     S.busy = false; if (btn.isConnected) btn.disabled = false;
+  }
+}
+
+
+/* ---------------- Tetapan laman ---------------- */
+const SHEET_SCRIPT = `// TanyaJer — terima 👍/👎 dari laman dan simpan dalam Google Sheet ini
+function doPost(e) {
+  var d = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Maklum balas') || ss.insertSheet('Maklum balas');
+  if (sh.getLastRow() === 0) sh.appendRow(['Masa', 'App', 'Soalan penonton', 'Soalan FAQ', 'Undian']);
+  var cut = function (v, n) { return String(v || '').slice(0, n); };
+  sh.appendRow([new Date(), cut(d.app, 100), cut(d.question, 500), cut(d.faq, 300), d.vote === 'up' ? '👍' : '👎']);
+  return ContentService.createTextOutput('ok');
+}`;
+function openSite() {
+  const st = S.config.site || {};
+  S.editor = { mode: 'site' };
+  $('#editor').innerHTML = `
+    <div class="row" style="margin-bottom:10px"><button class="btn sm ghost" type="button" id="e-back">← Kembali</button></div>
+    <h2>⚙️ Tetapan laman</h2>
+    <label class="f">Nama laman<input id="s-title" value="${esc(st.title || 'TanyaJer')}" maxlength="40"></label>
+    <label class="f">Tajuk utama<input id="s-heading" value="${esc(st.heading || '')}" placeholder="Ada soalan tentang app dalam tutorial?" maxlength="100"></label>
+    <label class="f">Ayat pengenalan<input id="s-tagline" value="${esc(st.tagline || '')}" placeholder="Pilih aplikasi, kemudian taip soalan anda." maxlength="160"></label>
+    <h3>Bila jawapan tidak dijumpai</h3>
+    <label class="f">Link untuk tanya terus (pilihan)<input id="s-contact" type="url" value="${esc(st.contactUrl || '')}" placeholder="https://www.youtube.com/@channelanda"><div class="hint">Contoh: channel YouTube, TikTok, atau link WhatsApp.</div></label>
+    <label class="f">Teks butang<input id="s-contact-label" value="${esc(st.contactLabel || '')}" placeholder="Tanya di ruangan komen YouTube" maxlength="50"></label>
+    <h3>👍 / 👎 maklum balas jawapan</h3>
+    <label class="f">Link Google Apps Script (pilihan)<input id="s-feedback" type="url" value="${esc(st.feedbackUrl || '')}" placeholder="https://script.google.com/macros/s/…/exec"><div class="hint">Kosongkan untuk sembunyikan butang 👍/👎.</div></label>
+    <details class="help"><summary>Cara sambung ke Google Sheet (5 minit)</summary>
+      <ol class="steps">
+        <li>Buka <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a> untuk buat Google Sheet baru (beri nama "TanyaJer maklum balas")</li>
+        <li>Menu <b>Extensions → Apps Script</b>, padam kod sedia ada, kemudian tampal kod di bawah</li>
+        <li>Tekan <b>Deploy → New deployment</b> → jenis <b>Web app</b></li>
+        <li><b>Execute as:</b> Me · <b>Who has access:</b> <i>Anyone</i> → <b>Deploy</b> (benarkan akses jika diminta)</li>
+        <li>Salin <b>Web app URL</b> (berakhir dengan <code>/exec</code>) dan tampal di atas</li>
+      </ol>
+      <pre id="s-code">${esc(SHEET_SCRIPT)}</pre>
+      <button class="btn sm" type="button" id="s-copy">📋 Salin kod</button>
+    </details>
+    <div class="savebar"><span id="e-status"></span><button class="btn primary" type="button" id="e-save">💾 Simpan & terbit</button></div>`;
+  show('editor');
+  $('#e-back').addEventListener('click', closeEditor);
+  $('#s-copy').addEventListener('click', async (ev) => {
+    try { await navigator.clipboard.writeText(SHEET_SCRIPT); ev.target.textContent = '✓ Disalin'; } catch { ev.target.textContent = 'Pilih & salin kod di atas'; }
+  });
+  $('#e-save').addEventListener('click', saveSite);
+}
+async function saveSite() {
+  if (S.busy) return;
+  const btn = $('#e-save'), stat = $('#e-status');
+  const v = (id) => $(id).value.trim();
+  const site = { title: v('#s-title') || 'TanyaJer', heading: v('#s-heading'), tagline: v('#s-tagline'),
+    contactUrl: v('#s-contact'), contactLabel: v('#s-contact-label'), feedbackUrl: v('#s-feedback') };
+  for (const k of ['contactUrl', 'feedbackUrl']) {
+    if (site[k] && !/^https?:\/\/\S+$/i.test(site[k])) { stat.textContent = '⚠️ Link mesti bermula dengan https://'; stat.style.color = 'var(--danger)'; return; }
+  }
+  if (site.feedbackUrl && !/\/exec(\?|$)/.test(site.feedbackUrl)) { stat.textContent = '⚠️ Link Apps Script sepatutnya berakhir dengan /exec'; stat.style.color = 'var(--danger)'; return; }
+  S.busy = true; btn.disabled = true; stat.style.color = ''; stat.textContent = 'Menyimpan…';
+  try {
+    const sha = await saveConfig((cfg) => {
+      const next = { ...cfg.site };
+      for (const [k, val] of Object.entries(site)) { if (val) next[k] = val; else delete next[k]; }
+      cfg.site = next;
+    }, 'Kemas kini tetapan laman');
+    closeEditor(); watchBuild(sha);
+  } catch (e) { stat.textContent = '⚠️ ' + errMsg(e); stat.style.color = 'var(--danger)'; }
+  finally { S.busy = false; if (btn.isConnected) btn.disabled = false; }
+}
+function uniqCats() { return [...new Set(Object.values(S.config.apps).map((a) => a?.category).filter(Boolean))].sort(); }
+
+/* ---------------- Kod QR ---------------- */
+async function openQr(id) {
+  const app = allApps().find((a) => a.id === id); if (!app) return;
+  const url = new URL(`./#${id}`, location.href).href;
+  S.editor = { mode: 'qr' };
+  $('#editor').innerHTML = `
+    <div class="row" style="margin-bottom:10px"><button class="btn sm ghost" type="button" id="e-back">← Kembali</button></div>
+    <h2>🔳 Kod QR · ${esc(app.name)}</h2>
+    <p class="muted" style="font-size:14px;margin:6px 0 14px">Letak dalam video, thumbnail atau poster. Penonton imbas dan terus masuk ke soal jawab ${esc(app.name)}.</p>
+    <div class="qr-box"><canvas id="qr" width="900" height="1040"></canvas>
+      <div class="files" style="margin-top:8px">${esc(url)}</div>
+      <div class="row" style="justify-content:center;margin-top:12px">
+        <a class="btn primary" id="qr-dl" download="qr-${esc(id)}.png" href="#" style="text-decoration:none">⬇️ Muat turun PNG</a>
+        <button class="btn" type="button" id="qr-copy">🔗 Salin link</button>
+      </div></div>`;
+  show('editor');
+  $('#e-back').addEventListener('click', closeEditor);
+  $('#qr-copy').addEventListener('click', async (ev) => { try { await navigator.clipboard.writeText(url); ev.target.textContent = '✓ Disalin'; } catch { ev.target.textContent = 'Salin dari teks di atas'; } });
+  try {
+    await loadScript('vendor/qrcode.js');
+    const qr = window.qrcode(0, 'M'); qr.addData(url); qr.make();
+    const cv = $('#qr'), ctx = cv.getContext('2d');
+    const n = qr.getModuleCount(), quiet = 4, size = 820, cell = Math.floor(size / (n + quiet * 2)), qrPx = cell * (n + quiet * 2), x0 = (cv.width - qrPx) / 2, y0 = 30;
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = '#111827';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) ctx.fillRect(x0 + (c + quiet) * cell, y0 + (r + quiet) * cell, cell, cell);
+    ctx.textAlign = 'center'; ctx.fillStyle = '#111827';
+    ctx.font = '700 46px "Plus Jakarta Sans", system-ui, sans-serif';
+    ctx.fillText(`${app.emoji} ${app.name}`.slice(0, 34), cv.width / 2, y0 + qrPx + 62);
+    ctx.fillStyle = '#4f46e5'; ctx.font = '600 32px "Plus Jakarta Sans", system-ui, sans-serif';
+    ctx.fillText(`Imbas untuk tanya · ${S.config.site?.title || 'TanyaJer'}`, cv.width / 2, y0 + qrPx + 112);
+    $('#qr-dl').href = cv.toDataURL('image/png');
+  } catch (e) {
+    $('.qr-box').insertAdjacentHTML('afterbegin', `<div class="status err">Kod QR tidak dapat dijana: ${esc(e.message)}</div>`);
   }
 }
 
@@ -405,6 +523,8 @@ document.addEventListener('click', (e) => {
   const d = t.dataset;
   if (t.id === 'btn-new') return openEditor('new');
   if (t.id === 'btn-token') return showToken(true);
+  if (t.id === 'btn-site') return openSite();
+  if (d.qr) return openQr(d.qr);
   if (t.id === 'btn-reload') { t.disabled = true; return loadAll().then(renderList).catch((er) => banner('⚠️ ' + esc(errMsg(er)), 'err')).finally(() => { t.disabled = false; }); }
   if (t.id === 't-save') return connect();
   if (t.id === 't-cancel') return show('main');

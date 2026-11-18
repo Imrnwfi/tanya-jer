@@ -37,6 +37,20 @@ Sebelum disimpan, halaman ini tunjuk pratonton soalan yang dijumpai dalam fail. 
 
 Token hanya disimpan dalam browser anda. Pengunjung lain tidak boleh mengubah apa-apa tanpa token. Jangan kongsi token anda dengan sesiapa.
 
+## 🧰 Ciri-ciri
+
+| Ciri | Cara guna |
+|---|---|
+| **👍 / 👎 pada jawapan** | Admin → **⚙️ Tetapan laman** → tampal link Google Apps Script (langkah ada di halaman itu, kod di `tools/google-sheet-maklum-balas.gs`). Setiap undian masuk ke Google Sheet anda. |
+| **Video tutorial** | Admin → **✏️ Edit** app → *Link video tutorial*. Butang ▶️ Tonton akan muncul. Tulis `minit 03:42` dalam jawapan FAQ untuk link terus ke minit itu dalam video. |
+| **Kod QR** | Admin → **🔳 QR** pada setiap app → muat turun PNG untuk video, thumbnail atau poster. |
+| **SEO Google** | Automatik. Setiap app dapat halaman `faq/<id>.html` beserta data FAQ untuk Google, `sitemap.xml` dan `robots.txt`. Untuk dipaparkan lebih cepat, hantar `https://<nama>.github.io/<repo>/sitemap.xml` di [Google Search Console](https://search.google.com/search-console). |
+| **Kongsi jawapan** | Butang 🔗 Kongsi pada setiap jawapan (WhatsApp, Telegram, salin link). Link membuka soalan itu di halaman FAQ. |
+| **Carian dari laman utama** | Penonton boleh taip soalan terus di laman utama, dan TanyaJer cari dalam semua FAQ. |
+| **Sumber & tarikh** | Admin → **✏️ Edit** → *Sumber maklumat* dan *Tarikh kemas kini*. Jika tarikh dikosongkan, tarikh upload fail digunakan. |
+| **Kategori** | Admin → **✏️ Edit** → *Kategori*. Tab kategori muncul di laman utama bila ada 2 kategori atau lebih. |
+| **Offline** | Automatik. FAQ yang pernah dibuka masih boleh dibaca tanpa internet, terutamanya selepas "Add to Home screen". |
+
 ## ✨ Jawapan ringkas (AI)
 
 TanyaJer menjawab secara **ringkas**. Ia tunjuk rumusan jawapan, dan jika soalan penonton menyebut perkara khusus (contohnya "bujang layak ke?"), hanya poin yang berkaitan dipaparkan. Jawapan asal sentiasa boleh dibuka melalui butang **Baca jawapan penuh**.
@@ -101,10 +115,12 @@ Format juga dikesan secara automatik jika setiap soalan berakhir dengan tanda `?
     "heading": "Ada soalan tentang app dalam tutorial?",
     "tagline": "Pilih aplikasi, kemudian taip soalan anda.",
     "contactUrl": "https://www.youtube.com/@channelanda",
-    "contactLabel": "Tanya di ruangan komen YouTube"
+    "contactLabel": "Tanya di ruangan komen YouTube",
+    "feedbackUrl": "https://script.google.com/macros/s/…/exec"
   },
   "apps": {
-    "canva":  { "name": "Canva",  "emoji": "🎨", "description": "Tutorial design poster", "order": 1 },
+    "canva":  { "name": "Canva",  "emoji": "🎨", "description": "Tutorial design poster", "order": 1,
+                "category": "Design", "video": "https://youtu.be/xxxx", "source": "Canva Help Center", "updated": "2025-10-24" },
     "capcut": { "name": "CapCut", "emoji": "🎬", "description": "Tutorial edit video",   "order": 2 }
   }
 }
@@ -140,5 +156,8 @@ style.css             ← gaya dikongsi
 src/faq-core.js       ← penghurai fail + enjin carian
 scripts/build.mjs     ← tukar faqs/ → data/apps.json
 scripts/summarize.mjs ← ringkasan jawapan (Claude AI atau automatik)
+scripts/pages.mjs     ← halaman FAQ (SEO), sitemap & service worker offline
+tools/                ← kod Google Apps Script untuk 👍/👎
+vendor/qrcode.js      ← penjana kod QR (MIT, Kazuhiko Arase)
 .github/workflows/    ← bina & terbit automatik ke GitHub Pages
 ```
