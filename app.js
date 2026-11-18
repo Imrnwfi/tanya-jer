@@ -1,6 +1,6 @@
 // TanyaJer — antara muka pengguna (laman statik untuk GitHub Pages).
 // Data dibina oleh scripts/build.mjs ke dalam data/apps.json.
-import { esc, norm, buildIndex, searchFaq, md } from './src/faq-core.js';
+import { esc, norm, uniq, tokenize, bestSim, buildIndex, searchFaq, md } from './src/faq-core.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const state = { status: 'loading', site: {}, apps: [], route: { view: 'home' }, chats: {}, chatFor: null };
@@ -100,8 +100,9 @@ function msgEl(m, app) {
   if (m.role === 'user') return el(`<div class="msg user"><div class="bubble">${esc(m.text)}</div></div>`);
   const faqs = app.faqs;
   let h = '';
-  if (m.from === 'faq') h += `<div class="src"><b>📄 Dari FAQ</b><span>· ${esc(m.matchedQ)}</span></div>`;
+  if (m.from === 'faq') h += `<div class="src"><b>${m.ai ? '✨ Ringkasan FAQ' : '📄 Dari FAQ'}</b><span>· ${esc(m.matchedQ)}</span></div>`;
   h += `<div class="md">${md(m.text)}</div>`;
+  if (m.full) h += `<details class="full"><summary>Baca jawapan penuh</summary><div class="md">${md(m.full)}</div></details>`;
   if (m.suggestions?.length) {
     h += `<div style="margin-top:8px">${m.suggestions.map((i) => `<button class="chip" type="button" data-faq="${i}">${esc(faqs[i].q)}</button>`).join('')}</div>`;
   }
@@ -123,6 +124,26 @@ function pushMsg(app, m) {
     requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' }));
   }
 }
+/* ---------------- Jawapan ringkas ----------------
+   Setiap FAQ ada ringkasan (s) dan poin utama (p) yang dijana semasa build.
+   Jika soalan penonton menyebut perkara khusus (cth "bujang", "BSN"), pilih poin yang berkaitan sahaja. */
+function focusPoints(app, i, text) {
+  const f = app.faqs[i];
+  if (!text || !Array.isArray(f.p) || !f.p.length) return [];
+  const idx = getIndex(app);
+  const qTok = tokenize(f.q);
+  const toks = uniq(tokenize(text)).filter((t) => !t.startsWith('q_') && !idx.nameT.has(t) && bestSim(t, qTok) < 0.7);
+  if (!toks.length) return [];
+  return f.p.map((p, k) => { const pt = tokenize(p); return { k, s: toks.reduce((n, t) => n + bestSim(t, pt), 0) / toks.length }; })
+    .filter((x) => x.s >= 0.6).sort((a, b) => b.s - a.s).slice(0, 3).sort((a, b) => a.k - b.k).map((x) => f.p[x.k]);
+}
+function answerFor(app, i, text) {
+  const f = app.faqs[i];
+  const pts = focusPoints(app, i, text);
+  const short = pts.length ? pts.map((p) => `- ${p}`).join('\n') : (f.s || f.a);
+  const same = norm(short) === norm(f.a);
+  return { from: 'faq', matchedQ: f.q, text: short, full: same ? '' : f.a, ai: !!f.ai };
+}
 function ask(text) {
   const app = currentApp();
   text = String(text || '').trim();
@@ -132,8 +153,7 @@ function ask(text) {
   const top = results[0], second = results[1]?.score || 0;
   // Jawab terus bila padanan jelas; jika dua soalan hampir sama kuat, tunjuk yang terbaik + soalan berkaitan.
   if (top && top.score >= 0.3 && (top.score - second >= 0.06 || top.score >= 0.45)) {
-    const f = app.faqs[top.i];
-    pushMsg(app, { role: 'bot', from: 'faq', text: f.a, matchedQ: f.q,
+    pushMsg(app, { role: 'bot', ...answerFor(app, top.i, text),
       related: results.slice(1, 4).filter((r) => r.score >= 0.25).map((r) => r.i) });
   } else if (top && top.score >= 0.2) {
     pushMsg(app, { role: 'bot', from: 'maybe', text: 'Saya tak pasti, tapi mungkin salah satu soalan ini yang anda maksudkan:',
@@ -149,7 +169,7 @@ function showFaq(i) {
   if (!f) return;
   pushMsg(app, { role: 'user', text: f.q });
   const related = searchFaq(getIndex(app), f.q).filter((r) => r.i !== i && r.score >= 0.25).slice(0, 3).map((r) => r.i);
-  pushMsg(app, { role: 'bot', from: 'faq', text: f.a, matchedQ: f.q, related });
+  pushMsg(app, { role: 'bot', ...answerFor(app, i, ''), related });
 }
 
 /* ---------------- Senarai semua FAQ ---------------- */

@@ -24,8 +24,17 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Simpan ringkasan AI yang sudah dijana, supaya hanya FAQ baru/berubah dihantar ke Claude
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: ringkasan-${{ github.run_id }}
+          restore-keys: ringkasan-
       - name: Bina laman dari folder faqs/
         run: npm run build
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TANYA_MODEL: ${{ vars.TANYA_MODEL || secrets.TANYA_MODEL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

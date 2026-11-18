@@ -37,6 +37,23 @@ Sebelum disimpan, halaman ini tunjuk pratonton soalan yang dijumpai dalam fail. 
 
 Token hanya disimpan dalam browser anda. Pengunjung lain tidak boleh mengubah apa-apa tanpa token. Jangan kongsi token anda dengan sesiapa.
 
+## ✨ Jawapan ringkas (AI)
+
+TanyaJer menjawab secara **ringkas**. Ia tunjuk rumusan jawapan, dan jika soalan penonton menyebut perkara khusus (contohnya "bujang layak ke?"), hanya poin yang berkaitan dipaparkan. Jawapan asal sentiasa boleh dibuka melalui butang **Baca jawapan penuh**.
+
+Untuk ringkasan yang dijana oleh **Claude AI**, tambah API key sekali sahaja:
+
+1. Dapatkan API key di https://console.anthropic.com → **API Keys → Create Key**
+2. Dalam repo ini, pergi ke **Settings → Secrets and variables → Actions → New repository secret**
+3. **Name:** `ANTHROPIC_API_KEY` dan **Secret:** tampal API key, kemudian tekan **Add secret**
+4. Jalankan semula: tab **Actions → Bina & terbit TanyaJer → Run workflow** (atau upload apa-apa FAQ)
+
+- Setiap jawapan hanya diringkaskan **sekali**. Hasilnya disimpan, dan hanya FAQ baru atau yang berubah dihantar semula ke AI. Kosnya sangat rendah, biasanya beberapa sen untuk satu fail FAQ.
+- Jawapan pendek tidak diringkaskan.
+- API key tidak pernah didedahkan kepada penonton. Ia hanya digunakan oleh GitHub Actions semasa membina laman.
+- Tanpa API key, TanyaJer tetap meringkaskan jawapan secara automatik (ambil ayat pertama dan senarai), tetapi tidak sepintar AI.
+- Untuk menukar model AI, tambah *Repository variable* atau secret `TANYA_MODEL` (lalai: `claude-haiku-5-5`).
+
 ## ➕ Tambah atau kemas kini FAQ terus di GitHub
 
 1. Buka folder **`faqs/`** di GitHub.
@@ -122,5 +139,6 @@ admin.html, admin.js  ← halaman urus FAQ (guna GitHub API)
 style.css             ← gaya dikongsi
 src/faq-core.js       ← penghurai fail + enjin carian
 scripts/build.mjs     ← tukar faqs/ → data/apps.json
+scripts/summarize.mjs ← ringkasan jawapan (Claude AI atau automatik)
 .github/workflows/    ← bina & terbit automatik ke GitHub Pages
 ```

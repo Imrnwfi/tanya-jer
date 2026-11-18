@@ -7,6 +7,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseCSV, rowsToFaq, parseJSONFaq, parseText, pdfItemsToText, slugify } from '../src/faq-core.js';
+import { summarizeAll } from './summarize.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FAQ_DIR = path.join(ROOT, 'faqs');
@@ -92,6 +93,7 @@ async function main() {
   }
 
   const list = [...apps.values()].sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+  await summarizeAll(list, { root: ROOT, warn });
   const data = {
     site: {
       title: String(site.title || 'TanyaJer'),

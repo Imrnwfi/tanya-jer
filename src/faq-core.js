@@ -316,4 +316,4 @@ function md(src){
   close(); return html.replace(/(<div class="sp"><\/div>)+$/,'');
 }
 
-export { esc, norm, uniq, tokenize, buildIndex, searchFaq, parseCSV, rowsToFaq, normalizePairs, parseJSONFaq, parseText, reflow, pdfItemsToText, md, slugify };
+export { esc, norm, uniq, tokenize, wordSim, bestSim, buildIndex, searchFaq, parseCSV, rowsToFaq, normalizePairs, parseJSONFaq, parseText, reflow, pdfItemsToText, md, slugify };
