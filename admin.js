@@ -115,6 +115,7 @@ function allApps() {
     const meta = S.config.apps[id] || {};
     return { id, name: meta.name || titleCase(id), emoji: meta.emoji || '📱', description: meta.description || '',
       category: meta.category || '', video: meta.video || '', source: meta.source || '', updated: meta.updated || '',
+      official: meta.official || '', officialLabel: meta.officialLabel || '', announce: meta.announce || '', announceUntil: meta.announceUntil || '',
       order: Number.isFinite(meta.order) ? meta.order : 1000, files: S.files.filter((f) => f.id === id) };
   }).sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
 }
@@ -280,7 +281,13 @@ function openEditor(mode, id) {
     <div class="grid2" style="grid-template-columns:1fr 160px">
       <label class="f">Sumber maklumat (pilihan)<input id="e-source" value="${esc(app?.source || '')}" placeholder="cth: LHDN" maxlength="80"></label>
       <label class="f">Tarikh kemas kini<input id="e-updated" type="date" value="${esc(app?.updated || '')}"><div class="hint">Kosong = tarikh upload</div></label>
-    </div>`;
+    </div>
+    <div class="grid2" style="grid-template-columns:1fr 160px">
+      <label class="f">Pautan rasmi (pilihan)<input id="e-official" type="url" inputmode="url" value="${esc(app?.official || '')}" placeholder="https://bantuantunai.hasil.gov.my"></label>
+      <label class="f">Teks butang<input id="e-official-label" value="${esc(app?.officialLabel || '')}" placeholder="Laman rasmi" maxlength="40"></label>
+    </div>
+    <label class="f">📢 Pengumuman app (pilihan)<input id="e-announce" value="${esc(app?.announce || '')}" placeholder="cth: Permohonan Fasa 2 dibuka 1 Disember!" maxlength="160"></label>
+    <label class="f">Papar sehingga<input id="e-announce-until" type="date" value="${esc(app?.announceUntil || '')}"><div class="hint">Pengumuman hilang sendiri selepas tarikh ini. Kosong = sentiasa papar.</div></label>`;
   const hasFiles = app && app.files.length;
   const upload = mode === 'edit' ? '' : `
     <h3>Fail FAQ</h3>
@@ -334,8 +341,11 @@ async function saveEditor() {
       if (ed.mode === 'new' && allApps().some((a) => a.id === id)) throw new Error(`ID "${id}" sudah digunakan. Tukar ID.`);
       const emoji = $('#e-emoji').value.trim() || '📱';
       const description = $('#e-desc').value.trim();
-      const extra = { category: $('#e-cat').value.trim(), video: $('#e-video').value.trim(), source: $('#e-source').value.trim(), updated: $('#e-updated').value };
+      const extra = { category: $('#e-cat').value.trim(), video: $('#e-video').value.trim(), source: $('#e-source').value.trim(), updated: $('#e-updated').value,
+        official: $('#e-official').value.trim(), officialLabel: $('#e-official-label').value.trim(),
+        announce: $('#e-announce').value.trim(), announceUntil: $('#e-announce-until').value };
       if (extra.video && !/^https?:\/\/\S+$/i.test(extra.video)) throw new Error('Link video mesti bermula dengan https://');
+      if (extra.official && !/^https?:\/\/\S+$/i.test(extra.official)) throw new Error('Pautan rasmi mesti bermula dengan https://');
       status('Menyimpan maklumat app…');
       lastSha = await saveConfig((cfg) => {
         const prev = cfg.apps[id] || {};
@@ -364,16 +374,21 @@ async function saveEditor() {
 
 
 /* ---------------- Tetapan laman ---------------- */
-const SHEET_SCRIPT = `// TanyaJer — terima 👍/👎 dari laman dan simpan dalam Google Sheet ini
-function doPost(e) {
-  var d = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName('Maklum balas') || ss.insertSheet('Maklum balas');
-  if (sh.getLastRow() === 0) sh.appendRow(['Masa', 'App', 'Soalan penonton', 'Soalan FAQ', 'Undian']);
-  var cut = function (v, n) { return String(v || '').slice(0, n); };
-  sh.appendRow([new Date(), cut(d.app, 100), cut(d.question, 500), cut(d.faq, 300), d.vote === 'up' ? '👍' : '👎']);
-  return ContentService.createTextOutput('ok');
-}`;
+// Kunci rahsia untuk statistik: disimpan dalam browser admin sahaja, dan disalin ke dalam kod Apps Script.
+function statsKey() {
+  let k = store.get('tanya.statsKey');
+  if (!k) {
+    const b = new Uint8Array(15); crypto.getRandomValues(b);
+    k = 'tj-' + Array.from(b, (x) => x.toString(36).padStart(2, '0')).join('').slice(0, 24);
+    store.set('tanya.statsKey', k);
+  }
+  return k;
+}
+async function scriptCode(key) {
+  const r = await fetch(`tools/google-apps-script.gs?t=${Date.now()}`, { cache: 'no-store' });
+  if (!r.ok) throw new Error('Kod Apps Script tidak dijumpai.');
+  return (await r.text()).replace("'__KUNCI__'", `'${key}'`);
+}
 function openSite() {
   const st = S.config.site || {};
   S.editor = { mode: 'site' };
@@ -383,27 +398,46 @@ function openSite() {
     <label class="f">Nama laman<input id="s-title" value="${esc(st.title || 'TanyaJer')}" maxlength="40"></label>
     <label class="f">Tajuk utama<input id="s-heading" value="${esc(st.heading || '')}" placeholder="Ada soalan tentang app dalam tutorial?" maxlength="100"></label>
     <label class="f">Ayat pengenalan<input id="s-tagline" value="${esc(st.tagline || '')}" placeholder="Pilih aplikasi, kemudian taip soalan anda." maxlength="160"></label>
+
+    <h3>📢 Pengumuman (semua halaman)</h3>
+    <label class="f">Teks pengumuman (pilihan)<input id="s-announce" value="${esc(st.announce || '')}" placeholder="cth: Video baru: cara mohon STR 2026!" maxlength="160"></label>
+    <div class="grid2" style="grid-template-columns:1fr 160px">
+      <label class="f">Link (pilihan)<input id="s-announce-url" type="url" value="${esc(st.announceUrl || '')}" placeholder="https://youtu.be/…"></label>
+      <label class="f">Papar sehingga<input id="s-announce-until" type="date" value="${esc(st.announceUntil || '')}"></label>
+    </div>
+    <div class="hint">Pengumuman hilang sendiri selepas tarikh tamat. Kosongkan teks untuk buang.</div>
+
     <h3>Bila jawapan tidak dijumpai</h3>
     <label class="f">Link untuk tanya terus (pilihan)<input id="s-contact" type="url" value="${esc(st.contactUrl || '')}" placeholder="https://www.youtube.com/@channelanda"><div class="hint">Contoh: channel YouTube, TikTok, atau link WhatsApp.</div></label>
     <label class="f">Teks butang<input id="s-contact-label" value="${esc(st.contactLabel || '')}" placeholder="Tanya di ruangan komen YouTube" maxlength="50"></label>
-    <h3>👍 / 👎 maklum balas jawapan</h3>
-    <label class="f">Link Google Apps Script (pilihan)<input id="s-feedback" type="url" value="${esc(st.feedbackUrl || '')}" placeholder="https://script.google.com/macros/s/…/exec"><div class="hint">Kosongkan untuk sembunyikan butang 👍/👎.</div></label>
+
+    <h3>📊 Google Sheet: statistik & 👍/👎</h3>
+    <label class="f">Link Google Apps Script (pilihan)<input id="s-feedback" type="url" value="${esc(st.feedbackUrl || '')}" placeholder="https://script.google.com/macros/s/…/exec"><div class="hint">Bila diisi: butang 👍/👎 dipaparkan, dan soalan penonton serta bilangan lawatan direkod (tanpa nama) untuk statistik.</div></label>
+    <label class="f">Kunci statistik (rahsia)<input id="s-key" value="${esc(statsKey())}" spellcheck="false" autocomplete="off"><div class="hint">Disimpan dalam browser ini sahaja. Jika guna telefon atau komputer lain, salin kunci yang sama dari kod Apps Script (baris ADMIN_KEY).</div></label>
     <details class="help"><summary>Cara sambung ke Google Sheet (5 minit)</summary>
       <ol class="steps">
-        <li>Buka <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a> untuk buat Google Sheet baru (beri nama "TanyaJer maklum balas")</li>
-        <li>Menu <b>Extensions → Apps Script</b>, padam kod sedia ada, kemudian tampal kod di bawah</li>
+        <li>Buka <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a> untuk buat Google Sheet baru (cth "TanyaJer statistik")</li>
+        <li>Menu <b>Extensions → Apps Script</b>, padam kod sedia ada, kemudian tampal kod di bawah (kunci anda sudah dimasukkan)</li>
         <li>Tekan <b>Deploy → New deployment</b> → jenis <b>Web app</b></li>
         <li><b>Execute as:</b> Me · <b>Who has access:</b> <i>Anyone</i> → <b>Deploy</b> (benarkan akses jika diminta)</li>
-        <li>Salin <b>Web app URL</b> (berakhir dengan <code>/exec</code>) dan tampal di atas</li>
+        <li>Salin <b>Web app URL</b> (berakhir dengan <code>/exec</code>) dan tampal di atas, kemudian tekan <b>Simpan & terbit</b></li>
       </ol>
-      <pre id="s-code">${esc(SHEET_SCRIPT)}</pre>
+      <p class="hint"><b>Sudah ada skrip lama?</b> Tampal kod baru, kemudian <b>Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy</b>. Link tidak berubah.</p>
+      <pre id="s-code">Memuatkan kod…</pre>
       <button class="btn sm" type="button" id="s-copy">📋 Salin kod</button>
     </details>
     <div class="savebar"><span id="e-status"></span><button class="btn primary" type="button" id="e-save">💾 Simpan & terbit</button></div>`;
   show('editor');
+  let code = '';
+  const loadCode = async () => {
+    try { code = await scriptCode($('#s-key').value.trim() || statsKey()); $('#s-code').textContent = code; }
+    catch (e) { $('#s-code').textContent = e.message; }
+  };
+  loadCode();
+  $('#s-key').addEventListener('change', () => { const k = $('#s-key').value.trim(); if (k.length >= 8) { store.set('tanya.statsKey', k); loadCode(); } });
   $('#e-back').addEventListener('click', closeEditor);
   $('#s-copy').addEventListener('click', async (ev) => {
-    try { await navigator.clipboard.writeText(SHEET_SCRIPT); ev.target.textContent = '✓ Disalin'; } catch { ev.target.textContent = 'Pilih & salin kod di atas'; }
+    try { await navigator.clipboard.writeText(code); ev.target.textContent = '✓ Disalin'; } catch { ev.target.textContent = 'Pilih & salin kod di atas'; }
   });
   $('#e-save').addEventListener('click', saveSite);
 }
@@ -411,12 +445,16 @@ async function saveSite() {
   if (S.busy) return;
   const btn = $('#e-save'), stat = $('#e-status');
   const v = (id) => $(id).value.trim();
+  const fail = (m) => { stat.textContent = '⚠️ ' + m; stat.style.color = 'var(--danger)'; };
   const site = { title: v('#s-title') || 'TanyaJer', heading: v('#s-heading'), tagline: v('#s-tagline'),
-    contactUrl: v('#s-contact'), contactLabel: v('#s-contact-label'), feedbackUrl: v('#s-feedback') };
-  for (const k of ['contactUrl', 'feedbackUrl']) {
-    if (site[k] && !/^https?:\/\/\S+$/i.test(site[k])) { stat.textContent = '⚠️ Link mesti bermula dengan https://'; stat.style.color = 'var(--danger)'; return; }
+    contactUrl: v('#s-contact'), contactLabel: v('#s-contact-label'), feedbackUrl: v('#s-feedback'),
+    announce: v('#s-announce'), announceUrl: v('#s-announce-url'), announceUntil: v('#s-announce-until') };
+  for (const k of ['contactUrl', 'feedbackUrl', 'announceUrl']) {
+    if (site[k] && !/^https?:\/\/\S+$/i.test(site[k])) return fail('Link mesti bermula dengan https://');
   }
-  if (site.feedbackUrl && !/\/exec(\?|$)/.test(site.feedbackUrl)) { stat.textContent = '⚠️ Link Apps Script sepatutnya berakhir dengan /exec'; stat.style.color = 'var(--danger)'; return; }
+  if (site.feedbackUrl && !/\/exec(\?|$)/.test(site.feedbackUrl)) return fail('Link Apps Script sepatutnya berakhir dengan /exec');
+  const key = v('#s-key'); if (key && key.length < 8) return fail('Kunci statistik terlalu pendek (sekurang-kurangnya 8 aksara).');
+  if (key) store.set('tanya.statsKey', key);
   S.busy = true; btn.disabled = true; stat.style.color = ''; stat.textContent = 'Menyimpan…';
   try {
     const sha = await saveConfig((cfg) => {
@@ -425,9 +463,65 @@ async function saveSite() {
       cfg.site = next;
     }, 'Kemas kini tetapan laman');
     closeEditor(); watchBuild(sha);
-  } catch (e) { stat.textContent = '⚠️ ' + errMsg(e); stat.style.color = 'var(--danger)'; }
+  } catch (e) { fail(errMsg(e)); }
   finally { S.busy = false; if (btn.isConnected) btn.disabled = false; }
 }
+
+/* ---------------- 📊 Statistik ---------------- */
+async function openStats() {
+  S.editor = { mode: 'stats' };
+  const url = S.config.site?.feedbackUrl;
+  $('#editor').innerHTML = `
+    <div class="row" style="margin-bottom:10px"><button class="btn sm ghost" type="button" id="e-back">← Kembali</button>
+      <span class="spacer" style="flex:1"></span><button class="btn sm" type="button" id="st-reload" ${url ? '' : 'hidden'}>↻ Muat semula</button></div>
+    <h2>📊 Statistik</h2>
+    <div id="st-body"><div class="status">Memuatkan statistik…</div></div>`;
+  show('editor');
+  $('#e-back').addEventListener('click', closeEditor);
+  $('#st-reload').addEventListener('click', openStats);
+  const body = $('#st-body');
+  if (!url) {
+    body.innerHTML = `<div class="empty">Statistik perlukan Google Sheet.<div style="margin-top:12px"><button class="btn primary" type="button" id="st-setup">⚙️ Sambung Google Sheet</button></div></div>`;
+    $('#st-setup').addEventListener('click', openSite);
+    return;
+  }
+  let d;
+  try {
+    const r = await fetch(`${url}?action=stats&key=${encodeURIComponent(statsKey())}&t=${Date.now()}`, { cache: 'no-store' });
+    d = await r.json();
+  } catch {
+    body.innerHTML = '<div class="status err">Tidak dapat mencapai Google Sheet. Pastikan Apps Script sudah di-deploy dengan akses <b>Anyone</b>, dan guna kod versi terkini (⚙️ Tetapan laman).</div>';
+    return;
+  }
+  if (S.editor?.mode !== 'stats') return;
+  if (!d || !d.ok) {
+    body.innerHTML = `<div class="status err">Kunci statistik tidak sepadan dengan kod Apps Script. Buka ⚙️ Tetapan laman dan pastikan kunci sama dengan baris <code>ADMIN_KEY</code> dalam Apps Script.</div>`;
+    return;
+  }
+  const v = d.visits || {}, q = d.questions || {};
+  const pct = q.d30 ? Math.round((q.answered / q.d30) * 100) : 0;
+  const list = (rows, fmt, empty) => rows && rows.length ? `<ol class="st-list">${rows.map(fmt).join('')}</ol>` : `<p class="muted" style="font-size:13px">${empty}</p>`;
+  const perApp = Object.entries(v.perApp || {}).sort((a, b) => b[1] - a[1]);
+  body.innerHTML = `
+    <div class="st-cards">
+      <div class="st-card"><b>${v.d7 || 0}</b><span>Lawatan 7 hari</span></div>
+      <div class="st-card"><b>${v.d30 || 0}</b><span>Lawatan 30 hari</span></div>
+      <div class="st-card"><b>${q.d30 || 0}</b><span>Soalan 30 hari</span></div>
+      <div class="st-card"><b>${q.d30 ? pct + '%' : '–'}</b><span>Soalan dijawab</span></div>
+    </div>
+    <h3>❓ Soalan tak terjawab (30 hari)</h3>
+    <p class="hint" style="margin:-4px 0 6px">Idea untuk FAQ atau video seterusnya.</p>
+    ${list(q.unanswered, (x) => `<li><span>${esc(x.q)}</span><small>${esc(x.app)} · ${x.n}×</small></li>`, 'Tiada — semua soalan berjaya dijawab 🎉')}
+    <h3>🔥 Soalan paling kerap (30 hari)</h3>
+    ${list(q.top, (x) => `<li><span>${esc(x.q)}</span><small>${esc(x.app)} · ${x.n}×</small></li>`, 'Belum ada soalan direkod.')}
+    <h3>👎 Jawapan yang perlu dibaiki</h3>
+    ${list((d.feedback || []).filter((x) => x.down > 0), (x) => `<li><span>${esc(x.q)}</span><small>${esc(x.app)} · 👍 ${x.up} · 👎 ${x.down}</small></li>`, 'Belum ada undian 👎.')}
+    <h3>📱 Lawatan ikut app (30 hari)</h3>
+    ${list(perApp, ([name, n]) => `<li><span>${esc(name)}</span><small>${n}</small></li>`, 'Belum ada lawatan direkod.')}
+    ${d.sheetUrl ? `<p style="margin-top:16px"><a class="btn" href="${esc(d.sheetUrl)}" target="_blank" rel="noopener" style="text-decoration:none">📄 Buka Google Sheet</a></p>` : ''}
+    <p class="hint">Jumlah lawatan sejak mula: ${v.all || 0}. Lawatan dikira sekali bagi setiap sesi untuk setiap halaman.</p>`;
+}
+
 function uniqCats() { return [...new Set(Object.values(S.config.apps).map((a) => a?.category).filter(Boolean))].sort(); }
 
 /* ---------------- Kod QR ---------------- */
@@ -524,6 +618,7 @@ document.addEventListener('click', (e) => {
   if (t.id === 'btn-new') return openEditor('new');
   if (t.id === 'btn-token') return showToken(true);
   if (t.id === 'btn-site') return openSite();
+  if (t.id === 'btn-stats') return openStats();
   if (d.qr) return openQr(d.qr);
   if (t.id === 'btn-reload') { t.disabled = true; return loadAll().then(renderList).catch((er) => banner('⚠️ ' + esc(errMsg(er)), 'err')).finally(() => { t.disabled = false; }); }
   if (t.id === 't-save') return connect();

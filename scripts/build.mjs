@@ -93,6 +93,10 @@ async function main() {
       video: isUrl(m.video) ? String(m.video).trim() : '',
       source: String(m.source || '').trim(),
       updated: isDate(m.updated) ? m.updated : '',
+      official: isUrl(m.official) ? String(m.official).trim() : '',
+      officialLabel: String(m.officialLabel || '').trim(),
+      announce: String(m.announce || '').trim(),
+      announceUntil: isDate(m.announceUntil) ? m.announceUntil : '',
       order: Number.isFinite(m.order) ? m.order : 1000,
       faqs: [],
       _dates: [],
@@ -123,6 +127,9 @@ async function main() {
       contactUrl: String(site.contactUrl || ''),
       contactLabel: String(site.contactLabel || 'Tanya terus kepada saya'),
       feedbackUrl: isUrl(site.feedbackUrl) ? String(site.feedbackUrl).trim() : '',
+      announce: String(site.announce || '').trim(),
+      announceUrl: isUrl(site.announceUrl) ? String(site.announceUrl).trim() : '',
+      announceUntil: isDate(site.announceUntil) ? site.announceUntil : '',
     },
     builtAt: new Date().toISOString(),
     apps: list,
@@ -135,6 +142,8 @@ async function main() {
     await fs.copyFile(path.join(ROOT, f), path.join(OUT, f));
   }
   await fs.copyFile(path.join(ROOT, 'src', 'faq-core.js'), path.join(OUT, 'src', 'faq-core.js'));
+  await fs.mkdir(path.join(OUT, 'tools'), { recursive: true });
+  await fs.copyFile(path.join(ROOT, 'tools', 'google-apps-script.gs'), path.join(OUT, 'tools', 'google-apps-script.gs'));
   await fs.mkdir(path.join(OUT, 'vendor'), { recursive: true });
   await fs.copyFile(path.join(ROOT, 'vendor', 'qrcode.js'), path.join(OUT, 'vendor', 'qrcode.js'));
   await fs.writeFile(path.join(OUT, 'data', 'apps.json'), JSON.stringify(data));

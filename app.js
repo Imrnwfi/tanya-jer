@@ -3,23 +3,129 @@
 import { esc, norm, uniq, tokenize, bestSim, buildIndex, searchFaq, md, linkTimes } from './src/faq-core.js';
 
 const $ = (s, r = document) => r.querySelector(s);
-const state = { status: 'loading', site: {}, apps: [], route: { view: 'home' }, chats: {}, chatFor: null, cat: '', pending: null };
+const store = {
+  get(k) { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* abaikan */ } },
+};
+const state = { status: 'loading', site: {}, apps: [], route: { view: 'home' }, chats: {}, chatFor: null, cat: '', pending: null, speakingId: null };
 let msgSeq = 0;
 const idxCache = new Map();
 
+/* ---------------- Bahasa paparan (BM / English) ---------------- */
+const I18N = {
+  ms: {
+    heading: 'Ada soalan tentang app dalam tutorial?',
+    tagline: 'Pilih aplikasi, kemudian taip soalan anda. Jawapan diambil terus dari FAQ.',
+    docTitle: 'Soal Jawab Tutorial', searchPh: 'Cari app atau taip soalan…', askPh: 'Taip soalan anda…', sheetPh: 'Cari dalam FAQ…',
+    back: 'Kembali', send: 'Hantar', close: '✕ Tutup', watch: ' Tonton', official: ' Rasmi', allFaq: ' Semua FAQ', fontSize: 'Besarkan tulisan',
+    answersFromFaq: 'Jawapan dari FAQ', all: 'Semua', noApps: 'Belum ada aplikasi lagi.', noMatchHome: 'Tiada aplikasi atau soalan sepadan.',
+    loadErr: 'Data FAQ tidak dapat dimuatkan. Cuba muat semula halaman ini.', offline: 'Anda sedang offline — memaparkan FAQ yang disimpan.',
+    loading: 'Memuatkan…', notFound: 'Aplikasi ini tidak dijumpai.', seeAll: '← Lihat semua app',
+    nQ: '{n} soalan', updated: 'dikemas kini {d}', hi: 'Hai! 👋 Tanya apa-apa tentang <strong>{name}</strong>.',
+    willSearch: 'Saya akan cari jawapan daripada {n} soalan dalam FAQ.', source: 'Sumber', updatedCap: 'Dikemas kini',
+    watchVideo: '▶️ Tonton video tutorial', officialSite: 'Laman rasmi', fromFaq: '📄 Dari FAQ', aiSummary: '✨ Ringkasan FAQ', readFull: 'Baca jawapan penuh',
+    helpful: 'Membantu?', yes: 'Ya, membantu', no: 'Tidak membantu', thanks: 'Terima kasih atas maklum balas!',
+    share: '🔗 Kongsi', copyLink: '📋 Salin link', copied: '✓ Disalin', copyPrompt: 'Salin link ini:', listen: '🔊 Dengar', stop: '⏹ Henti',
+    maybe: 'Saya tak pasti, tapi mungkin salah satu soalan ini yang anda maksudkan:',
+    none: 'Maaf, saya tak jumpa jawapan untuk soalan ini dalam FAQ {name}. Cuba guna perkataan lain, atau semak senarai semua FAQ.',
+    seeAllFaq: '📋 Lihat semua FAQ', related: 'Soalan berkaitan:', allFaqTitle: 'Semua FAQ · {name}', noFaqMatch: 'Tiada FAQ sepadan.',
+    foot: '📄 Jawapan diringkaskan dari FAQ · tekan “Baca jawapan penuh” untuk butiran', footLog: ' · soalan direkod tanpa nama untuk menambah baik FAQ',
+    suggest: 'Cadangan:', dismiss: 'Tutup pengumuman', months: ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'],
+  },
+  en: {
+    heading: 'Got a question about an app from the tutorial?',
+    tagline: 'Pick an app, then type your question. Answers come straight from the FAQ.',
+    docTitle: 'Tutorial Q&A', searchPh: 'Search apps or type a question…', askPh: 'Type your question…', sheetPh: 'Search the FAQ…',
+    back: 'Back', send: 'Send', close: '✕ Close', watch: ' Watch', official: ' Official', allFaq: ' All FAQs', fontSize: 'Larger text',
+    answersFromFaq: 'Answers from the FAQ', all: 'All', noApps: 'No apps yet.', noMatchHome: 'No matching apps or questions.',
+    loadErr: 'The FAQ could not be loaded. Please reload this page.', offline: 'You are offline — showing saved FAQs.',
+    loading: 'Loading…', notFound: 'This app was not found.', seeAll: '← See all apps',
+    nQ: '{n} questions', updated: 'updated {d}', hi: 'Hi! 👋 Ask anything about <strong>{name}</strong>.',
+    willSearch: "I'll search {n} FAQ questions for your answer.", source: 'Source', updatedCap: 'Updated',
+    watchVideo: '▶️ Watch the tutorial', officialSite: 'Official website', fromFaq: '📄 From the FAQ', aiSummary: '✨ FAQ summary', readFull: 'Read full answer',
+    helpful: 'Helpful?', yes: 'Yes, helpful', no: 'Not helpful', thanks: 'Thanks for your feedback!',
+    share: '🔗 Share', copyLink: '📋 Copy link', copied: '✓ Copied', copyPrompt: 'Copy this link:', listen: '🔊 Listen', stop: '⏹ Stop',
+    maybe: "I'm not sure, but you might mean one of these:",
+    none: "Sorry, I couldn't find an answer in the {name} FAQ. Try different words, or browse all FAQs.",
+    seeAllFaq: '📋 See all FAQs', related: 'Related questions:', allFaqTitle: 'All FAQs · {name}', noFaqMatch: 'No matching FAQ.',
+    foot: '📄 Answers are summarised from the FAQ · tap “Read full answer” for details', footLog: ' · questions are logged anonymously to improve the FAQ',
+    suggest: 'Suggestions:', dismiss: 'Dismiss announcement', months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  },
+};
+let lang = store.get('tanya.lang') || ((navigator.language || '').toLowerCase().startsWith('en') ? 'en' : 'ms');
+const t = (k, vars) => {
+  const v = I18N[lang][k] ?? I18N.ms[k] ?? k;
+  return Array.isArray(v) ? v : String(v).replace(/\{(\w+)\}/g, (_, x) => (vars && vars[x] != null ? vars[x] : ''));
+};
+function applyLang() {
+  document.documentElement.lang = lang === 'en' ? 'en' : 'ms';
+  document.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach((n) => { n.placeholder = t(n.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n-aria]').forEach((n) => { n.setAttribute('aria-label', t(n.dataset.i18nAria)); });
+  const b = $('#btn-lang'); b.textContent = lang === 'en' ? 'BM' : 'EN'; b.setAttribute('aria-label', lang === 'en' ? 'Bahasa Melayu' : 'English');
+  // tajuk & pengenalan: terjemah jika masih teks lalai
+  const { heading, tagline } = state.site;
+  $('#site-heading').textContent = !heading || heading === I18N.ms.heading ? t('heading') : heading;
+  $('#site-tagline').textContent = !tagline || tagline === I18N.ms.tagline ? t('tagline') : tagline;
+  $('#foot-note').textContent = t('foot') + (state.site.feedbackUrl ? t('footLog') : '');
+}
+
+/* ---------------- Saiz tulisan (A+) ---------------- */
+let fontLevel = Number(store.get('tanya.fs')) || 0;
+function applyFont() {
+  document.documentElement.classList.remove('fs-1', 'fs-2');
+  if (fontLevel) document.documentElement.classList.add(`fs-${fontLevel}`);
+  const b = $('#btn-font'); b.textContent = ['A+', 'A++', 'A'][fontLevel]; b.setAttribute('aria-pressed', String(fontLevel > 0));
+}
+
+/* ---------------- Utiliti ---------------- */
 const getIndex = (app) => {
   if (!idxCache.has(app.id)) idxCache.set(app.id, buildIndex(app));
   return idxCache.get(app.id);
 };
 const currentApp = () => (state.route.view === 'chat' ? state.apps.find((a) => a.id === state.route.id) : null);
 const chatOf = (id) => (state.chats[id] ||= []);
-const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
+const el = (html) => { const tp = document.createElement('template'); tp.innerHTML = html.trim(); return tp.content.firstElementChild; };
 const fmtDate = (iso) => {
   if (!/^\d{4}-\d{2}-\d{2}/.test(iso || '')) return '';
   const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
-  return `${d} ${['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'][m - 1]} ${y}`;
+  return `${d} ${t('months')[m - 1]} ${y}`;
 };
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const answerHtml = (text, app) => linkTimes(md(text), app.video);
+const plain = (s) => String(s).replace(/\*\*/g, '').replace(/^\s*[-*•]\s+/gm, '').replace(/\s+/g, ' ').trim();
+const hash = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return (h >>> 0).toString(36); };
+
+/* ---------------- Statistik (Google Sheet pemilik, jika disambung) ---------------- */
+function track(type, data) {
+  const url = state.site.feedbackUrl; if (!url) return;
+  try {
+    fetch(url, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ type, ...data }) }).catch(() => {});
+  } catch { /* abaikan */ }
+}
+function trackVisit(name) {
+  if (!name) return;
+  const k = `tanya.v.${name}`;
+  try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch { /* abaikan */ }
+  track('visit', { app: name });
+}
+
+/* ---------------- Pengumuman ---------------- */
+function dismissed() { try { return JSON.parse(store.get('tanya.dismissed') || '[]'); } catch { return []; } }
+function annHtml(text, url, until) {
+  if (!text || (until && today() > until)) return '';
+  const id = hash(text);
+  if (dismissed().includes(id)) return '';
+  const body = url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(text)} →</a>` : esc(text);
+  return `<div class="announce" role="status"><span class="a-ic">📢</span><div class="a-txt">${body}</div><button class="a-x" type="button" data-dismiss="${id}" aria-label="${esc(t('dismiss'))}">✕</button></div>`;
+}
+function renderAnnounce() {
+  const s = state.site, app = currentApp();
+  const site = annHtml(s.announce, s.announceUrl, s.announceUntil);
+  $('[data-slot=home]').innerHTML = site;
+  $('[data-slot=chat]').innerHTML = (app && annHtml(app.announce, '', app.announceUntil)) || site;
+}
 
 /* ---------------- Routing: #canva membuka terus soal jawab Canva ---------------- */
 function route() {
@@ -27,6 +133,7 @@ function route() {
   try { h = decodeURIComponent(location.hash.slice(1)); } catch { h = location.hash.slice(1); }
   state.route = h ? { view: 'chat', id: h } : { view: 'home' };
   closeSheet();
+  if (window.speechSynthesis) { speechSynthesis.cancel(); state.speakingId = null; }
   render();
   window.scrollTo(0, 0);
 }
@@ -40,14 +147,17 @@ function render() {
   $('#view-home').hidden = v !== 'home';
   $('#view-chat').hidden = v !== 'chat';
   const app = currentApp();
-  document.title = app ? `${app.name} · ${state.site.title || 'TanyaJer'}` : `${state.site.title || 'TanyaJer'} – Soal Jawab Tutorial`;
+  const title = state.site.title || 'TanyaJer';
+  document.title = app ? `${app.name} · ${title}` : `${title} – ${t('docTitle')}`;
+  renderAnnounce();
   if (v === 'home') renderHome(); else renderChat();
+  if (state.status === 'ready') trackVisit(app ? app.name : (v === 'home' ? 'Laman utama' : ''));
 }
 
 /* ---------------- Halaman utama: kategori, tab app & carian soalan ---------------- */
 function notice() {
-  if (state.status === 'error') return '<div class="notice">Data FAQ tidak dapat dimuatkan. Cuba muat semula halaman ini.</div>';
-  if (state.status === 'offline') return '<div class="notice">Anda sedang offline — memaparkan FAQ yang disimpan.</div>';
+  if (state.status === 'error') return `<div class="notice">${esc(t('loadErr'))}</div>`;
+  if (state.status === 'offline') return `<div class="notice">${esc(t('offline'))}</div>`;
   return '';
 }
 function categories() {
@@ -60,19 +170,17 @@ function renderHome() {
   const grid = $('#app-grid');
   const raw = $('#home-search').value.trim();
   const q = norm(raw);
-  // tab kategori
   const cats = categories();
   if (state.cat && !cats.includes(state.cat)) state.cat = '';
   $('#cat-tabs').hidden = !cats.length || !!q;
-  $('#cat-tabs').innerHTML = cats.length ? ['', ...cats].map((c) => `<button class="cat${c === state.cat ? ' on' : ''}" type="button" role="tab" aria-selected="${c === state.cat}" data-cat="${esc(c)}">${c ? esc(c) : 'Semua'}</button>`).join('') : '';
+  $('#cat-tabs').innerHTML = cats.length ? ['', ...cats].map((c) => `<button class="cat${c === state.cat ? ' on' : ''}" type="button" role="tab" aria-selected="${c === state.cat}" data-cat="${esc(c)}">${c ? esc(c) : esc(t('all'))}</button>`).join('') : '';
 
   if (state.status === 'loading') { grid.innerHTML = '<div class="skel"></div>'.repeat(4); $('#home-results').innerHTML = ''; return; }
   if (state.status === 'error') { grid.innerHTML = ''; $('#home-results').innerHTML = ''; return; }
-  if (!state.apps.length) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="big">📭</div>Belum ada aplikasi lagi.</div>'; return; }
+  if (!state.apps.length) { grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="big">📭</div>${esc(t('noApps'))}</div>`; return; }
 
-  // carian soalan dalam semua FAQ
   const results = raw.length >= 3 ? searchAll(raw) : [];
-  $('#home-results').innerHTML = results.length ? `<div class="res-head">Jawapan dari FAQ</div>${results.map((r, n) => `
+  $('#home-results').innerHTML = results.length ? `<div class="res-head">${esc(t('answersFromFaq'))}</div>${results.map((r, n) => `
     <button class="res" type="button" data-res="${n}">
       <span class="emo">${esc(r.app.emoji)}</span>
       <span class="res-txt"><b>${esc(r.app.faqs[r.i].q)}</b><span>${esc(r.app.name)}</span></span><span class="go">›</span>
@@ -82,13 +190,12 @@ function renderHome() {
   const list = state.apps.filter((a) => (q ? norm(a.name).includes(q) : !state.cat || a.category === state.cat));
   grid.innerHTML = list.length
     ? list.map((a) => `<a class="app-tab" href="#${encodeURIComponent(a.id)}" title="${esc(a.name)}"><span class="emo">${esc(a.emoji)}</span><span class="nm">${esc(a.name)}</span></a>`).join('')
-    : (results.length ? '' : '<div class="empty" style="grid-column:1/-1">Tiada aplikasi atau soalan sepadan.</div>');
+    : (results.length ? '' : `<div class="empty" style="grid-column:1/-1">${esc(t('noMatchHome'))}</div>`);
 }
 function searchAll(text) {
   const out = [];
   for (const app of state.apps) {
-    const r = searchFaq(getIndex(app), text).filter((x) => x.score >= 0.32).slice(0, 2);
-    for (const x of r) out.push({ app, i: x.i, score: x.score });
+    for (const x of searchFaq(getIndex(app), text).filter((r) => r.score >= 0.32).slice(0, 2)) out.push({ app, i: x.i, score: x.score });
   }
   return out.sort((a, b) => b.score - a.score).slice(0, 5);
 }
@@ -105,23 +212,23 @@ function renderChat() {
   if (!app) {
     main.hidden = true; miss.hidden = false; state.chatFor = null;
     miss.innerHTML = state.status === 'loading'
-      ? '<div class="empty" style="margin-top:24px">Memuatkan…</div>'
-      : `${notice()}<div class="empty" style="margin-top:24px"><div class="big">🤔</div>Aplikasi ini tidak dijumpai.<div style="margin-top:12px"><button class="btn" type="button" data-act="home">← Lihat semua app</button></div></div>`;
+      ? `<div class="empty" style="margin-top:24px">${esc(t('loading'))}</div>`
+      : `${notice()}<div class="empty" style="margin-top:24px"><div class="big">🤔</div>${esc(t('notFound'))}<div style="margin-top:12px"><button class="btn" type="button" data-act="home">${esc(t('seeAll'))}</button></div></div>`;
     return;
   }
   miss.hidden = true; main.hidden = false;
   $('#chat-emo').textContent = app.emoji;
   $('#chat-name').textContent = app.name;
-  $('#chat-sub').textContent = [`${app.faqs.length} soalan`, app.updated ? `dikemas kini ${fmtDate(app.updated)}` : ''].filter(Boolean).join(' · ');
-  const vid = $('#btn-video');
-  vid.hidden = !app.video; if (app.video) vid.href = app.video;
+  $('#chat-sub').textContent = [t('nQ', { n: app.faqs.length }), app.updated ? t('updated', { d: fmtDate(app.updated) }) : ''].filter(Boolean).join(' · ');
+  const vid = $('#btn-video'); vid.hidden = !app.video; if (app.video) vid.href = app.video;
+  const off = $('#btn-official'); off.hidden = !app.official; if (app.official) { off.href = app.official; off.title = app.officialLabel || t('officialSite'); }
   if (state.chatFor !== app.id) { state.chatFor = app.id; renderAllMsgs(app); }
-  // dari carian laman utama
   if (state.pending && state.pending.id === app.id) {
     const { i, text } = state.pending; state.pending = null;
     if (app.faqs[i]) {
       pushMsg(app, { role: 'user', text: text || app.faqs[i].q });
       pushMsg(app, { role: 'bot', ...answerFor(app, i, text), related: relatedTo(app, i) });
+      track('question', { app: app.name, question: text || app.faqs[i].q, faq: app.faqs[i].q, status: 'jawab' });
     }
   }
 }
@@ -130,11 +237,15 @@ function renderAllMsgs(app) {
   box.innerHTML = '';
   const msgs = chatOf(app.id);
   if (!msgs.length) {
-    const meta = [app.source ? `Sumber: <b>${esc(app.source)}</b>` : '', app.updated ? `Dikemas kini ${esc(fmtDate(app.updated))}` : ''].filter(Boolean).join(' · ');
-    box.appendChild(el(`<div class="msg bot"><div class="bubble"><p>Hai! 👋 Tanya apa-apa tentang <strong>${esc(app.name)}</strong>.</p>
-      <p class="muted" style="font-size:13px;margin-top:4px">Saya akan cari jawapan daripada ${app.faqs.length} soalan dalam FAQ.</p>
+    const meta = [app.source ? `${esc(t('source'))}: <b>${esc(app.source)}</b>` : '', app.updated ? `${esc(t('updatedCap'))} ${esc(fmtDate(app.updated))}` : ''].filter(Boolean).join(' · ');
+    const links = [
+      app.video ? `<a class="chip ai" href="${esc(app.video)}" target="_blank" rel="noopener noreferrer">${esc(t('watchVideo'))}</a>` : '',
+      app.official ? `<a class="chip ai" href="${esc(app.official)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(app.officialLabel || t('officialSite'))}</a>` : '',
+    ].join('');
+    box.appendChild(el(`<div class="msg bot"><div class="bubble"><p>${t('hi', { name: esc(app.name) })}</p>
+      <p class="muted" style="font-size:.87em;margin-top:4px">${esc(t('willSearch', { n: app.faqs.length }))}</p>
       ${meta ? `<p class="src-meta">📌 ${meta}</p>` : ''}
-      ${app.video ? `<div style="margin-top:8px"><a class="chip ai" href="${esc(app.video)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">▶️ Tonton video tutorial</a></div>` : ''}</div></div>`));
+      ${links ? `<div class="links">${links}</div>` : ''}</div></div>`));
   }
   for (const m of msgs) box.appendChild(msgEl(m, app));
   renderChips(app);
@@ -147,23 +258,24 @@ function renderChips(app) {
 function contactBtn() {
   const { contactUrl, contactLabel } = state.site;
   if (!contactUrl || !/^(https?:|mailto:)/i.test(contactUrl)) return '';
-  return `<a class="chip ai" href="${esc(contactUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">💬 ${esc(contactLabel || 'Tanya terus')}</a>`;
+  return `<a class="chip ai" href="${esc(contactUrl)}" target="_blank" rel="noopener noreferrer">💬 ${esc(contactLabel || 'Tanya terus')}</a>`;
 }
 function actionsHtml(m) {
-  const fb = state.site.feedbackUrl;
   let h = '<div class="acts">';
-  if (fb) {
+  if (state.site.feedbackUrl) {
     h += m.voted
-      ? `<span class="thanks">${m.voted === 'up' ? '👍' : '👎'} Terima kasih atas maklum balas!</span>`
-      : `<span class="lbl">Membantu?</span><button class="act" type="button" data-vote="up" data-mid="${m.id}" aria-label="Ya, membantu">👍</button><button class="act" type="button" data-vote="down" data-mid="${m.id}" aria-label="Tidak membantu">👎</button>`;
+      ? `<span class="thanks">${m.voted === 'up' ? '👍' : '👎'} ${esc(t('thanks'))}</span>`
+      : `<span class="lbl">${esc(t('helpful'))}</span><button class="act" type="button" data-vote="up" data-mid="${m.id}" aria-label="${esc(t('yes'))}">👍</button><button class="act" type="button" data-vote="down" data-mid="${m.id}" aria-label="${esc(t('no'))}">👎</button>`;
   }
-  h += `<button class="act share" type="button" data-share="${m.id}">🔗 Kongsi</button></div>`;
+  h += '<span class="acts-r">';
+  if (window.speechSynthesis) h += `<button class="act link" type="button" data-speak="${m.id}">${esc(state.speakingId === m.id ? t('stop') : t('listen'))}</button>`;
+  h += `<button class="act link" type="button" data-share="${m.id}">${esc(t('share'))}</button></span></div>`;
   if (m.shareOpen) {
     const { url, text } = shareData(m);
     h += `<div class="share-row">
       <a class="chip" href="https://wa.me/?text=${encodeURIComponent(`${text}\n\n${url}`)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
       <a class="chip" href="https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}" target="_blank" rel="noopener noreferrer">Telegram</a>
-      <button class="chip" type="button" data-copy="${m.id}">${m.copied ? '✓ Disalin' : '📋 Salin link'}</button></div>`;
+      <button class="chip" type="button" data-copy="${m.id}">${esc(m.copied ? t('copied') : t('copyLink'))}</button></div>`;
   }
   return h;
 }
@@ -171,18 +283,19 @@ function msgEl(m, app) {
   if (m.role === 'user') return el(`<div class="msg user"><div class="bubble">${esc(m.text)}</div></div>`);
   const faqs = app.faqs;
   let h = '';
-  if (m.from === 'faq') h += `<div class="src"><b>${m.ai ? '✨ Ringkasan FAQ' : '📄 Dari FAQ'}</b><span>· ${esc(m.matchedQ)}</span></div>`;
-  h += `<div class="md">${m.from === 'faq' ? answerHtml(m.text, app) : md(m.text)}</div>`;
-  if (m.full) h += `<details class="full"><summary>Baca jawapan penuh</summary><div class="md">${answerHtml(m.full, app)}</div></details>`;
+  if (m.from === 'faq') h += `<div class="src"><b>${esc(m.ai ? t('aiSummary') : t('fromFaq'))}</b><span>· ${esc(m.matchedQ)}</span></div>`;
+  const text = m.from === 'maybe' ? t('maybe') : m.from === 'none' ? t('none', { name: app.name }) : m.text;
+  h += `<div class="md">${m.from === 'faq' ? answerHtml(text, app) : md(text)}</div>`;
+  if (m.full) h += `<details class="full"><summary>${esc(t('readFull'))}</summary><div class="md">${answerHtml(m.full, app)}</div></details>`;
   if (m.from === 'faq') h += actionsHtml(m);
   if (m.suggestions?.length) {
     h += `<div style="margin-top:8px">${m.suggestions.map((i) => `<button class="chip" type="button" data-faq="${i}">${esc(faqs[i].q)}</button>`).join('')}</div>`;
   }
   if (m.from === 'none' || m.from === 'maybe') {
-    h += `<div style="margin-top:8px"><button class="chip" type="button" data-act="allfaq">📋 Lihat semua FAQ</button>${contactBtn()}</div>`;
+    h += `<div style="margin-top:8px"><button class="chip" type="button" data-act="allfaq">${esc(t('seeAllFaq'))}</button>${contactBtn()}</div>`;
   }
   if (m.related?.length) {
-    h += `<div class="related"><div class="lbl">Soalan berkaitan:</div>${m.related.map((i) => `<button class="chip" type="button" data-faq="${i}">${esc(faqs[i].q)}</button>`).join('')}</div>`;
+    h += `<div class="related"><div class="lbl">${esc(t('related'))}</div>${m.related.map((i) => `<button class="chip" type="button" data-faq="${i}">${esc(faqs[i].q)}</button>`).join('')}</div>`;
   }
   return el(`<div class="msg bot" id="m-${m.id}"><div class="bubble">${h}</div></div>`);
 }
@@ -211,9 +324,9 @@ function focusPoints(app, i, text) {
   if (!text || !Array.isArray(f.p) || !f.p.length) return [];
   const idx = getIndex(app);
   const qTok = tokenize(f.q);
-  const toks = uniq(tokenize(text)).filter((t) => !t.startsWith('q_') && !idx.nameT.has(t) && bestSim(t, qTok) < 0.7);
+  const toks = uniq(tokenize(text)).filter((x) => !x.startsWith('q_') && !idx.nameT.has(x) && bestSim(x, qTok) < 0.7);
   if (!toks.length) return [];
-  return f.p.map((p, k) => { const pt = tokenize(p); return { k, s: toks.reduce((n, t) => n + bestSim(t, pt), 0) / toks.length }; })
+  return f.p.map((p, k) => { const pt = tokenize(p); return { k, s: toks.reduce((n, x) => n + bestSim(x, pt), 0) / toks.length }; })
     .filter((x) => x.s >= 0.6 && f.p.indexOf(f.p[x.k]) === x.k).sort((a, b) => b.s - a.s).slice(0, 3).sort((a, b) => a.k - b.k).map((x) => f.p[x.k]);
 }
 function answerFor(app, i, text) {
@@ -234,33 +347,61 @@ function ask(text) {
   const top = results[0], second = results[1]?.score || 0;
   // Jawab terus bila padanan jelas; jika dua soalan hampir sama kuat, tunjuk yang terbaik + soalan berkaitan.
   if (top && top.score >= 0.3 && (top.score - second >= 0.06 || top.score >= 0.45)) {
-    pushMsg(app, { role: 'bot', ...answerFor(app, top.i, text),
-      related: results.slice(1, 4).filter((r) => r.score >= 0.25).map((r) => r.i) });
+    pushMsg(app, { role: 'bot', ...answerFor(app, top.i, text), related: results.slice(1, 4).filter((r) => r.score >= 0.25).map((r) => r.i) });
+    track('question', { app: app.name, question: text, faq: app.faqs[top.i].q, status: 'jawab' });
   } else if (top && top.score >= 0.2) {
-    pushMsg(app, { role: 'bot', from: 'maybe', text: 'Saya tak pasti, tapi mungkin salah satu soalan ini yang anda maksudkan:',
-      suggestions: results.slice(0, 3).filter((r) => r.score >= 0.14).map((r) => r.i) });
+    pushMsg(app, { role: 'bot', from: 'maybe', suggestions: results.slice(0, 3).filter((r) => r.score >= 0.14).map((r) => r.i) });
+    track('question', { app: app.name, question: text, faq: app.faqs[top.i].q, status: 'mungkin' });
   } else {
-    pushMsg(app, { role: 'bot', from: 'none',
-      text: `Maaf, saya tak jumpa jawapan untuk soalan ini dalam FAQ ${app.name}. Cuba guna perkataan lain, atau semak senarai semua FAQ.` });
+    pushMsg(app, { role: 'bot', from: 'none' });
+    track('question', { app: app.name, question: text, faq: '', status: 'tiada' });
   }
 }
-function showFaq(i) {
+function showFaq(i, typed) {
   const app = currentApp();
   const f = app?.faqs[i];
   if (!f) return;
   pushMsg(app, { role: 'user', text: f.q });
   pushMsg(app, { role: 'bot', ...answerFor(app, i, ''), related: relatedTo(app, i) });
+  if (typed) track('question', { app: app.name, question: typed, faq: f.q, status: 'cadangan' });
 }
 
-/* ---------------- 👍 / 👎 (dihantar ke Google Sheet pemilik) ---------------- */
+/* ---------------- Cadangan semasa menaip ---------------- */
+function suggest() {
+  const app = currentApp(); if (!app) return;
+  const v = $('#ask-input').value.trim();
+  if (v.length < 2) { renderChips(app); return; }
+  const res = searchFaq(getIndex(app), v).filter((r) => r.score >= 0.22).slice(0, 4);
+  if (res.length) {
+    $('#chips').innerHTML = `<div class="sug-lbl">${esc(t('suggest'))}</div>${res.map((r) => `<button class="chip sug" type="button" data-sug="${r.i}">${esc(app.faqs[r.i].q)}</button>`).join('')}`;
+  } else renderChips(app);
+}
+
+/* ---------------- 👍 / 👎 ---------------- */
 function vote(m, v) {
   if (m.voted) return;
   m.voted = v; refreshMsg(m);
   const app = state.apps.find((a) => a.id === m.appId);
-  const body = JSON.stringify({ type: 'feedback', app: app?.name || m.appId, question: m.question || '', faq: m.matchedQ, vote: v, page: location.href });
-  try {
-    fetch(state.site.feedbackUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body, keepalive: true }).catch(() => {});
-  } catch { /* abaikan */ }
+  track('feedback', { app: app?.name || m.appId, question: m.question || '', faq: m.matchedQ, vote: v });
+}
+
+/* ---------------- 🔊 Dengar jawapan ---------------- */
+function speak(m) {
+  const synth = window.speechSynthesis; if (!synth) return;
+  const was = state.speakingId;
+  synth.cancel();
+  state.speakingId = null;
+  const prev = was && findMsg(was); if (prev) refreshMsg(prev);
+  if (was === m.id) return;
+  const u = new SpeechSynthesisUtterance(plain(`${m.matchedQ}. ${m.text}`));
+  const voices = synth.getVoices();
+  const v = voices.find((x) => /^ms/i.test(x.lang)) || voices.find((x) => /^id/i.test(x.lang));
+  if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'ms-MY';
+  u.rate = 0.95;
+  const done = () => { if (state.speakingId === m.id) { state.speakingId = null; refreshMsg(m); } };
+  u.onend = done; u.onerror = done;
+  state.speakingId = m.id; refreshMsg(m);
+  synth.speak(u);
 }
 
 /* ---------------- Kongsi jawapan ---------------- */
@@ -268,7 +409,7 @@ function shareData(m) {
   const app = state.apps.find((a) => a.id === m.appId);
   const f = app.faqs[m.faqIdx];
   const url = new URL(`faq/${app.id}.html${f.k ? `#${f.k}` : ''}`, location.href).href;
-  const summary = String(f.s || f.a).replace(/\*\*/g, '').replace(/\s+/g, ' ').trim();
+  const summary = plain(f.s || f.a);
   const text = `❓ ${f.q}\n\n${summary.length > 280 ? summary.slice(0, 277).replace(/\s+\S*$/, '') + '…' : summary}`;
   return { url, text, title: `${app.name} · ${state.site.title || 'TanyaJer'}` };
 }
@@ -282,14 +423,14 @@ async function share(m) {
 }
 async function copyShare(m) {
   try { await navigator.clipboard.writeText(shareData(m).url); m.copied = true; }
-  catch { m.copied = false; prompt?.('Salin link ini:', shareData(m).url); }
+  catch { m.copied = false; window.prompt?.(t('copyPrompt'), shareData(m).url); }
   refreshMsg(m);
 }
 
 /* ---------------- Senarai semua FAQ ---------------- */
 function openSheet() {
   const app = currentApp(); if (!app) return;
-  $('#sheet-title').textContent = `Semua FAQ · ${app.name}`;
+  $('#sheet-title').textContent = t('allFaqTitle', { name: app.name });
   $('#sheet-search').value = '';
   renderSheet();
   $('#sheet').hidden = false;
@@ -301,27 +442,35 @@ function renderSheet() {
   const order = q ? searchFaq(getIndex(app), q).filter((r) => r.score >= 0.15).map((r) => r.i) : app.faqs.map((_, i) => i);
   $('#sheet-list').innerHTML = order.length
     ? order.map((i) => `<details class="faq"><summary>${esc(app.faqs[i].q)}</summary><div class="ans">${answerHtml(app.faqs[i].a, app)}</div></details>`).join('')
-    : '<div class="muted" style="padding:10px 2px">Tiada FAQ sepadan.</div>';
+    : `<div class="muted" style="padding:10px 2px">${esc(t('noFaqMatch'))}</div>`;
 }
 
 /* ---------------- Peristiwa ---------------- */
 document.addEventListener('click', (e) => {
-  const t = e.target.closest('button'); if (!t) return;
-  const d = t.dataset;
-  if (t.id === 'brand' || t.id === 'chat-back' || d.act === 'home') return go('');
-  if (t.id === 'btn-allfaq' || d.act === 'allfaq') return openSheet();
-  if (t.id === 'sheet-close') return closeSheet();
+  const b = e.target.closest('button'); if (!b) return;
+  const d = b.dataset;
+  if (b.id === 'brand' || b.id === 'chat-back' || d.act === 'home') return go('');
+  if (b.id === 'btn-allfaq' || d.act === 'allfaq') return openSheet();
+  if (b.id === 'sheet-close') return closeSheet();
+  if (b.id === 'btn-lang') {
+    lang = lang === 'en' ? 'ms' : 'en'; store.set('tanya.lang', lang);
+    applyLang(); state.chatFor = null; render(); return;
+  }
+  if (b.id === 'btn-font') { fontLevel = (fontLevel + 1) % 3; store.set('tanya.fs', String(fontLevel)); applyFont(); return; }
+  if (d.dismiss) { const list = dismissed(); list.push(d.dismiss); store.set('tanya.dismissed', JSON.stringify(list.slice(-30))); renderAnnounce(); return; }
   if (d.faq !== undefined) return showFaq(Number(d.faq));
+  if (d.sug !== undefined) { const typed = $('#ask-input').value.trim(); $('#ask-input').value = ''; return showFaq(Number(d.sug), typed); }
   if (d.cat !== undefined) { state.cat = d.cat; return renderHome(); }
   if (d.res !== undefined) return openResult(Number(d.res));
   if (d.vote) { const m = findMsg(d.mid); if (m) vote(m, d.vote); return; }
+  if (d.speak) { const m = findMsg(d.speak); if (m) speak(m); return; }
   if (d.share) { const m = findMsg(d.share); if (m) share(m); return; }
   if (d.copy) { const m = findMsg(d.copy); if (m) copyShare(m); }
 });
 $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
 $('#sheet-search').addEventListener('input', renderSheet);
-let homeTimer;
+let homeTimer, sugTimer;
 $('#home-search').addEventListener('input', () => { clearTimeout(homeTimer); homeTimer = setTimeout(renderHome, 120); });
 $('#home-search').addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
@@ -329,8 +478,10 @@ $('#home-search').addEventListener('keydown', (e) => {
   if (state.homeResults?.length) openResult(0);
   else { const a = $('#app-grid .app-tab'); if (a) a.click(); }
 });
+$('#ask-input').addEventListener('input', () => { clearTimeout(sugTimer); sugTimer = setTimeout(suggest, 110); });
 $('#ask-form').addEventListener('submit', (e) => {
   e.preventDefault();
+  clearTimeout(sugTimer);
   const inp = $('#ask-input');
   const v = inp.value;
   inp.value = '';
@@ -338,9 +489,12 @@ $('#ask-form').addEventListener('submit', (e) => {
 });
 window.addEventListener('hashchange', route);
 window.addEventListener('popstate', route);
+if (window.speechSynthesis) speechSynthesis.getVoices();
 
 /* ---------------- Mula ---------------- */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+applyFont();
+applyLang();
 route();
 fetch('data/apps.json', { cache: 'no-cache' })
   .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -349,8 +503,7 @@ fetch('data/apps.json', { cache: 'no-cache' })
     state.apps = (data.apps || []).map((a) => ({ ...a, emoji: a.emoji || '📱', description: a.description || '', category: a.category || '', faqs: a.faqs || [] }));
     state.status = navigator.onLine === false ? 'offline' : 'ready';
     if (state.site.title) $('#site-title').textContent = state.site.title;
-    if (state.site.heading) $('#site-heading').textContent = state.site.heading;
-    if (state.site.tagline) $('#site-tagline').textContent = state.site.tagline;
+    applyLang();
     render();
   })
   .catch(() => { state.status = 'error'; render(); });

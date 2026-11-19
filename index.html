@@ -22,6 +22,9 @@
 <header class="top">
   <div class="wrap">
     <button class="brand" id="brand" type="button"><img class="logo-img" src="icon.svg" alt="" width="30" height="30"><span id="site-title">TanyaJer</span></button>
+    <div class="spacer" style="flex:1"></div>
+    <button class="btn sm ghost tool" id="btn-font" type="button" aria-label="Besarkan tulisan" data-i18n-aria="fontSize">A+</button>
+    <button class="btn sm ghost tool" id="btn-lang" type="button" aria-label="English">EN</button>
   </div>
 </header>
 
@@ -32,8 +35,9 @@
       <h1 id="site-heading">Ada soalan tentang app dalam tutorial?</h1>
       <p id="site-tagline">Pilih aplikasi, kemudian taip soalan anda. Jawapan diambil terus dari FAQ.</p>
     </div>
+    <div class="announce-slot" data-slot="home"></div>
     <div id="home-notice"></div>
-    <div class="search"><span class="ic">🔎</span><input id="home-search" type="search" placeholder="Cari app atau taip soalan…" autocomplete="off" aria-label="Cari app atau taip soalan" enterkeyhint="search"></div>
+    <div class="search"><span class="ic">🔎</span><input id="home-search" type="search" placeholder="Cari app atau taip soalan…" autocomplete="off" aria-label="Cari app atau taip soalan" enterkeyhint="search" data-i18n-ph="searchPh"></div>
     <div id="home-results"></div>
     <div id="cat-tabs" class="cats" role="tablist" aria-label="Kategori"></div>
     <div id="app-grid" class="grid"></div>
@@ -45,20 +49,22 @@
     <div id="chat-missing" hidden></div>
     <div id="chat-main">
       <div class="chat-head">
-        <button class="back" id="chat-back" type="button" aria-label="Kembali">←</button>
+        <button class="back" id="chat-back" type="button" aria-label="Kembali" data-i18n-aria="back">←</button>
         <div class="emo" id="chat-emo">📱</div>
         <div class="ttl"><b id="chat-name"></b><div class="sub" id="chat-sub"></div></div>
-        <a class="btn sm" id="btn-video" href="#" target="_blank" rel="noopener noreferrer" hidden style="text-decoration:none">▶️<span class="t"> Tonton</span></a>
-        <button class="btn sm" id="btn-allfaq" type="button">📋<span class="t"> Semua FAQ</span></button>
+        <a class="btn sm" id="btn-video" href="#" target="_blank" rel="noopener noreferrer" hidden style="text-decoration:none">▶️<span class="t" data-i18n="watch"> Tonton</span></a>
+        <a class="btn sm" id="btn-official" href="#" target="_blank" rel="noopener noreferrer" hidden style="text-decoration:none">🔗<span class="t" data-i18n="official"> Rasmi</span></a>
+        <button class="btn sm" id="btn-allfaq" type="button">📋<span class="t" data-i18n="allFaq"> Semua FAQ</span></button>
       </div>
+      <div class="announce-slot" data-slot="chat"></div>
       <div id="msgs" class="msgs" aria-live="polite"></div>
       <div class="composer">
         <div id="chips" class="chips"></div>
         <form id="ask-form" autocomplete="off">
-          <input id="ask-input" placeholder="Taip soalan anda…" maxlength="300" aria-label="Soalan anda">
-          <button class="send" id="ask-btn" type="submit" aria-label="Hantar">➤</button>
+          <input id="ask-input" placeholder="Taip soalan anda…" maxlength="300" aria-label="Soalan anda" data-i18n-ph="askPh" enterkeyhint="send">
+          <button class="send" id="ask-btn" type="submit" aria-label="Hantar" data-i18n-aria="send">➤</button>
         </form>
-        <div class="foot-note">📄 Jawapan diringkaskan dari FAQ · tekan “Baca jawapan penuh” untuk butiran</div>
+        <div class="foot-note" id="foot-note">📄 Jawapan diringkaskan dari FAQ · tekan “Baca jawapan penuh” untuk butiran</div>
       </div>
     </div>
   </section>
@@ -66,9 +72,9 @@
 
 <div class="sheet" id="sheet" hidden>
   <div class="sheet-card" role="dialog" aria-label="Semua FAQ">
-    <div class="sheet-head"><b id="sheet-title">Semua FAQ</b><button class="btn sm" id="sheet-close" type="button">✕ Tutup</button></div>
+    <div class="sheet-head"><b id="sheet-title">Semua FAQ</b><button class="btn sm" id="sheet-close" type="button" data-i18n="close">✕ Tutup</button></div>
     <div class="sheet-body">
-      <input id="sheet-search" type="search" placeholder="Cari dalam FAQ…" autocomplete="off" aria-label="Cari dalam FAQ">
+      <input id="sheet-search" type="search" placeholder="Cari dalam FAQ…" autocomplete="off" aria-label="Cari dalam FAQ" data-i18n-ph="sheetPh">
       <div id="sheet-list"></div>
     </div>
   </div>

@@ -63,6 +63,7 @@ ${FONTS}
     <div class="row" style="margin-top:14px">
       <a class="btn primary" href="../#${esc(app.id)}" style="text-decoration:none">💬 Tanya soalan</a>
       ${app.video ? `<a class="btn" href="${esc(app.video)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">▶️ Tonton tutorial</a>` : ''}
+      ${app.official ? `<a class="btn" href="${esc(app.official)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">🔗 ${esc(app.officialLabel || 'Laman rasmi')}</a>` : ''}
     </div>
   </div>
   ${items}

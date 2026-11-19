@@ -204,7 +204,8 @@ details.full .md{margin-top:8px;padding:10px 12px;border-radius:12px;background:
 .acts .lbl{margin-right:2px}
 .act{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:3px 9px;font-size:13px;line-height:1.4}
 .act:hover{border-color:var(--brand)}
-.act.share{margin-left:auto;font-size:12px;font-weight:600;color:var(--brand)}
+.acts-r{margin-left:auto;display:inline-flex;gap:4px}
+.act.link{font-size:12px;font-weight:600;color:var(--brand)}
 .thanks{color:var(--accent);font-weight:600}
 .share-row{margin-top:8px}
 .share-row .chip{text-decoration:none;color:inherit}
@@ -222,3 +223,37 @@ a.ts{font-weight:600;text-decoration:none;background:var(--brand-soft);border-ra
 .qr-box{text-align:center}
 .qr-box canvas{width:min(280px,100%);height:auto;border-radius:14px;border:1px solid var(--line);background:#fff}
 .faq-page details.faq{scroll-margin-top:72px}
+
+/* ---- admin: statistik ---- */
+.st-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:12px}
+.st-card{border:1px solid var(--line);background:var(--bg);border-radius:13px;padding:12px}
+.st-card b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.st-card span{font-size:12px;color:var(--muted)}
+.st-list{margin:0;padding-left:22px}
+.st-list li{padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.st-list li span{display:block}
+.st-list li small{color:var(--muted);font-size:12px}
+
+/* ---- alat di header: A+ & BM/EN ---- */
+.btn.tool{padding:5px 9px;font-size:13px;font-weight:700;min-width:38px;justify-content:center}
+.btn.tool[aria-pressed="true"]{background:var(--brand-soft);color:var(--brand);border-color:transparent}
+/* ---- pengumuman ---- */
+.announce{display:flex;align-items:flex-start;gap:9px;border-radius:13px;padding:10px 10px 10px 12px;margin:0 0 14px;background:var(--warn-soft);color:var(--warn);font-size:14px;font-weight:600;line-height:1.45}
+.announce .a-txt{flex:1;min-width:0}
+.announce a{color:inherit}
+.announce .a-x{border:0;background:transparent;color:inherit;opacity:.7;font-size:14px;padding:0 4px;line-height:1.4}
+#view-chat .announce-slot .announce{margin:12px 0 0}
+/* ---- cadangan semasa menaip & pautan ---- */
+.sug-lbl{font-size:12px;color:var(--muted);font-weight:600;margin:0 0 5px 2px}
+.chip.sug{background:var(--card);border-color:color-mix(in srgb,var(--brand) 35%,var(--line))}
+.chip.sug::before{content:"🔎 ";font-size:.85em}
+.bubble .links{margin-top:8px}
+a.chip{text-decoration:none;color:inherit}
+a.chip.ai{color:var(--brand)}
+/* ---- saiz tulisan ---- */
+html.fs-1 .bubble,html.fs-1 .chip,html.fs-1 .composer input,html.fs-1 details.faq,html.fs-1 .res-txt b,html.fs-1 .app-tab .nm,html.fs-1 .hero p,html.fs-1 .announce{font-size:17px}
+html.fs-2 .bubble,html.fs-2 .chip,html.fs-2 .composer input,html.fs-2 details.faq,html.fs-2 .res-txt b,html.fs-2 .app-tab .nm,html.fs-2 .hero p,html.fs-2 .announce{font-size:19.5px}
+html.fs-1 .hero h1{font-size:clamp(26px,6vw,34px)}
+html.fs-2 .hero h1{font-size:clamp(28px,7vw,36px)}
+html.fs-1 .src,html.fs-1 .acts,html.fs-1 .related .lbl,html.fs-1 details.full summary{font-size:14px}
+html.fs-2 .src,html.fs-2 .acts,html.fs-2 .related .lbl,html.fs-2 details.full summary{font-size:15.5px}
