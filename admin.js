@@ -116,6 +116,7 @@ function allApps() {
     return { id, name: meta.name || titleCase(id), emoji: meta.emoji || '📱', description: meta.description || '',
       category: meta.category || '', video: meta.video || '', source: meta.source || '', updated: meta.updated || '',
       official: meta.official || '', officialLabel: meta.officialLabel || '', announce: meta.announce || '', announceUntil: meta.announceUntil || '',
+      deadline: meta.deadline || '', deadlineLabel: meta.deadlineLabel || '',
       order: Number.isFinite(meta.order) ? meta.order : 1000, files: S.files.filter((f) => f.id === id) };
   }).sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
 }
@@ -128,7 +129,7 @@ function renderList() {
       : live != null ? `${live} soalan di laman` : 'Belum diterbitkan';
     return `<div class="arow">
       <div class="emo">${esc(a.emoji)}</div>
-      <div class="inf"><b>${esc(a.name)}</b><div class="muted" style="font-size:13px">${info}${a.category ? ` · 🏷️ ${esc(a.category)}` : ''}${a.video ? ' · ▶️ video' : ''}</div>
+      <div class="inf"><b>${esc(a.name)}</b><div class="muted" style="font-size:13px">${info}${a.category ? ` · 🏷️ ${esc(a.category)}` : ''}${a.video ? ' · ▶️ video' : ''}${a.deadline ? ` · ⏳ ${esc(a.deadline)}` : ''}</div>
         <div class="files">${a.files.map((f) => '📄 ' + esc(f.name)).join(' · ')}</div></div>
       <div class="row">
         <button class="btn sm" type="button" data-upload="${esc(a.id)}">⬆️ Upload FAQ</button>
@@ -287,7 +288,12 @@ function openEditor(mode, id) {
       <label class="f">Teks butang<input id="e-official-label" value="${esc(app?.officialLabel || '')}" placeholder="Laman rasmi" maxlength="40"></label>
     </div>
     <label class="f">📢 Pengumuman app (pilihan)<input id="e-announce" value="${esc(app?.announce || '')}" placeholder="cth: Permohonan Fasa 2 dibuka 1 Disember!" maxlength="160"></label>
-    <label class="f">Papar sehingga<input id="e-announce-until" type="date" value="${esc(app?.announceUntil || '')}"><div class="hint">Pengumuman hilang sendiri selepas tarikh ini. Kosong = sentiasa papar.</div></label>`;
+    <label class="f">Papar sehingga<input id="e-announce-until" type="date" value="${esc(app?.announceUntil || '')}"><div class="hint">Pengumuman hilang sendiri selepas tarikh ini. Kosong = sentiasa papar.</div></label>
+    <div class="grid2" style="grid-template-columns:160px 1fr">
+      <label class="f">⏳ Tarikh tutup (pilihan)<input id="e-deadline" type="date" value="${esc(app?.deadline || '')}"></label>
+      <label class="f">Teks kiraan<input id="e-deadline-label" value="${esc(app?.deadlineLabel || '')}" placeholder="Permohonan tutup" maxlength="40"></label>
+    </div>
+    <div class="hint">Contoh paparan: "⏳ Permohonan tutup: 5 hari lagi". Hilang sendiri 7 hari selepas tarikh tutup.</div>`;
   const hasFiles = app && app.files.length;
   const upload = mode === 'edit' ? '' : `
     <h3>Fail FAQ</h3>
@@ -343,7 +349,8 @@ async function saveEditor() {
       const description = $('#e-desc').value.trim();
       const extra = { category: $('#e-cat').value.trim(), video: $('#e-video').value.trim(), source: $('#e-source').value.trim(), updated: $('#e-updated').value,
         official: $('#e-official').value.trim(), officialLabel: $('#e-official-label').value.trim(),
-        announce: $('#e-announce').value.trim(), announceUntil: $('#e-announce-until').value };
+        announce: $('#e-announce').value.trim(), announceUntil: $('#e-announce-until').value,
+        deadline: $('#e-deadline').value, deadlineLabel: $('#e-deadline-label').value.trim() };
       if (extra.video && !/^https?:\/\/\S+$/i.test(extra.video)) throw new Error('Link video mesti bermula dengan https://');
       if (extra.official && !/^https?:\/\/\S+$/i.test(extra.official)) throw new Error('Pautan rasmi mesti bermula dengan https://');
       status('Menyimpan maklumat app…');

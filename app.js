@@ -30,6 +30,8 @@ const I18N = {
     none: 'Maaf, saya tak jumpa jawapan untuk soalan ini dalam FAQ {name}. Cuba guna perkataan lain, atau semak senarai semua FAQ.',
     seeAllFaq: '📋 Lihat semua FAQ', related: 'Soalan berkaitan:', allFaqTitle: 'Semua FAQ · {name}', noFaqMatch: 'Tiada FAQ sepadan.',
     foot: '📄 Jawapan diringkaskan dari FAQ · tekan “Baca jawapan penuh” untuk butiran', footLog: ' · soalan direkod tanpa nama untuk menambah baik FAQ',
+    newLbl: 'Baru', newCount: '🆕 {n} soalan baru / dikemas kini:', dlDefault: 'Tarikh tutup',
+    dlLeft: '⏳ {label}: {n} hari lagi · {d}', dlToday: '⏳ {label}: hari ini! · {d}', dlPast: '✓ {label}: sudah tamat ({d})', dlTab: '⏳ {n}h',
     suggest: 'Cadangan:', dismiss: 'Tutup pengumuman', months: ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'],
   },
   en: {
@@ -49,6 +51,8 @@ const I18N = {
     none: "Sorry, I couldn't find an answer in the {name} FAQ. Try different words, or browse all FAQs.",
     seeAllFaq: '📋 See all FAQs', related: 'Related questions:', allFaqTitle: 'All FAQs · {name}', noFaqMatch: 'No matching FAQ.',
     foot: '📄 Answers are summarised from the FAQ · tap “Read full answer” for details', footLog: ' · questions are logged anonymously to improve the FAQ',
+    newLbl: 'New', newCount: '🆕 {n} new / updated questions:', dlDefault: 'Closing date',
+    dlLeft: '⏳ {label}: {n} days left · {d}', dlToday: '⏳ {label}: today! · {d}', dlPast: '✓ {label}: closed ({d})', dlTab: '⏳ {n}d',
     suggest: 'Suggestions:', dismiss: 'Dismiss announcement', months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
   },
 };
@@ -93,6 +97,22 @@ const fmtDate = (iso) => {
 };
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const answerHtml = (text, app) => linkTimes(md(text), app.video);
+const daysFrom = (iso) => { const [y, m, d] = iso.split('-').map(Number); const a = new Date(y, m - 1, d), b = new Date(); b.setHours(0, 0, 0, 0); return Math.round((a - b) / 864e5); };
+
+/* ---------------- 🆕 Baru & ⏳ tarikh tutup ---------------- */
+const NEW_DAYS = 14;
+const isRecent = (f) => !!f.n && -daysFrom(f.n) <= NEW_DAYS;
+const appAllNew = (app) => app.faqs.length > 0 && app.faqs.every(isRecent);
+const recentFaqs = (app) => (appAllNew(app) ? [] : app.faqs.map((f, i) => (isRecent(f) ? i : -1)).filter((i) => i >= 0));
+const newTag = (app, f) => (isRecent(f) && !appAllNew(app) ? `<span class="new-badge">🆕 ${esc(t('newLbl'))}</span>` : '');
+function deadlineText(app) {
+  if (!app.deadline) return null;
+  const n = daysFrom(app.deadline), label = app.deadlineLabel || t('dlDefault'), d = fmtDate(app.deadline);
+  if (n > 0) return { text: t('dlLeft', { label, n, d }), soon: n <= 7, n };
+  if (n === 0) return { text: t('dlToday', { label, d }), soon: true, n };
+  if (n >= -7) return { text: t('dlPast', { label, d }), soon: false, n };
+  return null;
+}
 const plain = (s) => String(s).replace(/\*\*/g, '').replace(/^\s*[-*•]\s+/gm, '').replace(/\s+/g, ' ').trim();
 const hash = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return (h >>> 0).toString(36); };
 
@@ -189,7 +209,13 @@ function renderHome() {
 
   const list = state.apps.filter((a) => (q ? norm(a.name).includes(q) : !state.cat || a.category === state.cat));
   grid.innerHTML = list.length
-    ? list.map((a) => `<a class="app-tab" href="#${encodeURIComponent(a.id)}" title="${esc(a.name)}"><span class="emo">${esc(a.emoji)}</span><span class="nm">${esc(a.name)}</span></a>`).join('')
+    ? list.map((a) => {
+      const dl = deadlineText(a), rec = recentFaqs(a).length;
+      const badge = dl && dl.n >= 0 && dl.n <= 30 ? `<span class="tab-badge${dl.soon ? ' soon' : ''}">${esc(t('dlTab', { n: dl.n }))}</span>`
+        : appAllNew(a) ? `<span class="tab-badge new">${esc(t('newLbl'))}</span>`
+        : rec ? `<span class="tab-badge new">🆕 ${rec}</span>` : '';
+      return `<a class="app-tab" href="#${encodeURIComponent(a.id)}" title="${esc(a.name)}"><span class="emo">${esc(a.emoji)}</span><span class="nm">${esc(a.name)}</span>${badge}</a>`;
+    }).join('')
     : (results.length ? '' : `<div class="empty" style="grid-column:1/-1">${esc(t('noMatchHome'))}</div>`);
 }
 function searchAll(text) {
@@ -221,6 +247,8 @@ function renderChat() {
   $('#chat-name').textContent = app.name;
   $('#chat-sub').textContent = [t('nQ', { n: app.faqs.length }), app.updated ? t('updated', { d: fmtDate(app.updated) }) : ''].filter(Boolean).join(' · ');
   const vid = $('#btn-video'); vid.hidden = !app.video; if (app.video) vid.href = app.video;
+  const dl = deadlineText(app), dlEl = $('#deadline');
+  dlEl.hidden = !dl; if (dl) { dlEl.textContent = dl.text; dlEl.classList.toggle('soon', dl.soon); }
   const off = $('#btn-official'); off.hidden = !app.official; if (app.official) { off.href = app.official; off.title = app.officialLabel || t('officialSite'); }
   if (state.chatFor !== app.id) { state.chatFor = app.id; renderAllMsgs(app); }
   if (state.pending && state.pending.id === app.id) {
@@ -245,14 +273,16 @@ function renderAllMsgs(app) {
     box.appendChild(el(`<div class="msg bot"><div class="bubble"><p>${t('hi', { name: esc(app.name) })}</p>
       <p class="muted" style="font-size:.87em;margin-top:4px">${esc(t('willSearch', { n: app.faqs.length }))}</p>
       ${meta ? `<p class="src-meta">📌 ${meta}</p>` : ''}
-      ${links ? `<div class="links">${links}</div>` : ''}</div></div>`));
+      ${links ? `<div class="links">${links}</div>` : ''}
+      ${recentFaqs(app).length ? `<div class="related"><div class="lbl">${esc(t('newCount', { n: recentFaqs(app).length }))}</div>${recentFaqs(app).slice(0, 4).map((i) => `<button class="chip" type="button" data-faq="${i}">${esc(app.faqs[i].q)}</button>`).join('')}</div>` : ''}</div></div>`));
   }
   for (const m of msgs) box.appendChild(msgEl(m, app));
   renderChips(app);
 }
 function renderChips(app) {
+  const shown = new Set(recentFaqs(app).slice(0, 4));
   $('#chips').innerHTML = !chatOf(app.id).length
-    ? app.faqs.slice(0, 4).map((f, i) => `<button class="chip" type="button" data-faq="${i}">${esc(f.q)}</button>`).join('')
+    ? app.faqs.map((f, i) => i).filter((i) => !shown.has(i)).slice(0, 4).map((i) => `<button class="chip" type="button" data-faq="${i}">${esc(app.faqs[i].q)}</button>`).join('')
     : '';
 }
 function contactBtn() {
@@ -283,7 +313,7 @@ function msgEl(m, app) {
   if (m.role === 'user') return el(`<div class="msg user"><div class="bubble">${esc(m.text)}</div></div>`);
   const faqs = app.faqs;
   let h = '';
-  if (m.from === 'faq') h += `<div class="src"><b>${esc(m.ai ? t('aiSummary') : t('fromFaq'))}</b><span>· ${esc(m.matchedQ)}</span></div>`;
+  if (m.from === 'faq') h += `<div class="src"><b>${esc(m.ai ? t('aiSummary') : t('fromFaq'))}</b>${newTag(app, faqs[m.faqIdx])}<span>· ${esc(m.matchedQ)}</span></div>`;
   const text = m.from === 'maybe' ? t('maybe') : m.from === 'none' ? t('none', { name: app.name }) : m.text;
   h += `<div class="md">${m.from === 'faq' ? answerHtml(text, app) : md(text)}</div>`;
   if (m.full) h += `<details class="full"><summary>${esc(t('readFull'))}</summary><div class="md">${answerHtml(m.full, app)}</div></details>`;
@@ -408,7 +438,7 @@ function speak(m) {
 function shareData(m) {
   const app = state.apps.find((a) => a.id === m.appId);
   const f = app.faqs[m.faqIdx];
-  const url = new URL(`faq/${app.id}.html${f.k ? `#${f.k}` : ''}`, location.href).href;
+  const url = new URL(f.k ? `faq/${app.id}/${f.k}.html` : `faq/${app.id}.html`, location.href).href;
   const summary = plain(f.s || f.a);
   const text = `❓ ${f.q}\n\n${summary.length > 280 ? summary.slice(0, 277).replace(/\s+\S*$/, '') + '…' : summary}`;
   return { url, text, title: `${app.name} · ${state.site.title || 'TanyaJer'}` };
@@ -441,7 +471,7 @@ function renderSheet() {
   const q = $('#sheet-search').value.trim();
   const order = q ? searchFaq(getIndex(app), q).filter((r) => r.score >= 0.15).map((r) => r.i) : app.faqs.map((_, i) => i);
   $('#sheet-list').innerHTML = order.length
-    ? order.map((i) => `<details class="faq"><summary>${esc(app.faqs[i].q)}</summary><div class="ans">${answerHtml(app.faqs[i].a, app)}</div></details>`).join('')
+    ? order.map((i) => `<details class="faq"><summary>${esc(app.faqs[i].q)} ${newTag(app, app.faqs[i])}</summary><div class="ans">${answerHtml(app.faqs[i].a, app)}</div></details>`).join('')
     : `<div class="muted" style="padding:10px 2px">${esc(t('noFaqMatch'))}</div>`;
 }
 

@@ -4,12 +4,14 @@
 //   npm run build        -> bina _site/
 //   npm run dev          -> bina, kemudian buka http://localhost:8080
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { parseCSV, rowsToFaq, parseJSONFaq, parseText, pdfItemsToText, slugify, faqAnchors } from '../src/faq-core.js';
+import { parseCSV, rowsToFaq, parseJSONFaq, parseText, pdfItemsToText, slugify, faqAnchors, norm } from '../src/faq-core.js';
 import { summarizeAll } from './summarize.mjs';
 import { writePages } from './pages.mjs';
+import { writeOgImages } from './og.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FAQ_DIR = path.join(ROOT, 'faqs');
@@ -51,6 +53,45 @@ async function parseFile(file) {
 }
 
 // Tarikh commit terakhir sesuatu fail (YYYY-MM-DD), untuk "Dikemas kini"
+// Sejarah FAQ dari git: bila setiap soalan (atau jawapannya) kali terakhir ditambah/diubah.
+// Hasil: Map(appId -> Map(soalan -> { a: jawapan, since: 'YYYY-MM-DD' }))
+const idOfFile = (name) => (/^[._]/.test(name) || /^readme/i.test(name) ? '' : slugify(path.basename(name, path.extname(name)).split('__')[0]));
+async function faqHistory() {
+  const out = new Map();
+  const git = (args) => execFileSync('git', args, { cwd: ROOT, maxBuffer: 256 * 1024 * 1024 });
+  let log = '';
+  try { log = git(['log', '--reverse', '--format=%H %cs', '--', 'faqs/']).toString().trim(); } catch { return out; }
+  if (!log) return out;
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'tanyajer-'));
+  try {
+    for (const line of log.split('\n')) {
+      const [hash, date] = line.split(' ');
+      const changed = git(['diff-tree', '--no-commit-id', '--name-only', '-r', '--root', hash, '--', 'faqs/']).toString().split('\n').filter(Boolean);
+      const ids = new Set(changed.map((f) => idOfFile(path.basename(f))).filter(Boolean));
+      if (!ids.size) continue;
+      const files = git(['ls-tree', '--name-only', hash, 'faqs/']).toString().split('\n').filter(Boolean);
+      for (const id of ids) {
+        const seen = out.get(id) || new Map();
+        for (const f of files.filter((x) => idOfFile(path.basename(x)) === id)) {
+          const ext = path.extname(f).toLowerCase();
+          if (!SUPPORTED.includes(ext)) continue;
+          const tf = path.join(tmp, `h${ext}`);
+          await fs.writeFile(tf, git(['show', `${hash}:${f}`]));
+          let pairs = [];
+          try { pairs = await parseFile(tf); } catch { /* fail lama yang rosak */ }
+          for (const p of pairs) {
+            const k = norm(p.q), a = norm(p.a), prev = seen.get(k);
+            if (!prev || prev.a !== a) seen.set(k, { a, since: date });
+          }
+        }
+        out.set(id, seen);
+      }
+    }
+  } catch (e) { warn(`Sejarah FAQ tidak dapat dibaca: ${e.message}`); }
+  finally { await fs.rm(tmp, { recursive: true, force: true }); }
+  return out;
+}
+
 function gitDate(file) {
   try { return execFileSync('git', ['log', '-1', '--format=%cs', '--', file], { cwd: ROOT, encoding: 'utf8' }).trim(); }
   catch { return ''; }
@@ -97,6 +138,8 @@ async function main() {
       officialLabel: String(m.officialLabel || '').trim(),
       announce: String(m.announce || '').trim(),
       announceUntil: isDate(m.announceUntil) ? m.announceUntil : '',
+      deadline: isDate(m.deadline) ? m.deadline : '',
+      deadlineLabel: String(m.deadlineLabel || '').trim(),
       order: Number.isFinite(m.order) ? m.order : 1000,
       faqs: [],
       _dates: [],
@@ -113,7 +156,12 @@ async function main() {
   }
 
   const list = [...apps.values()].sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+  const history = await faqHistory();
+  const todayIso = new Date().toISOString().slice(0, 10);
   for (const app of list) {
+    // n = tarikh soalan ini ditambah atau jawapannya kali terakhir diubah
+    const h = history.get(app.id);
+    for (const f of app.faqs) { const r = h && h.get(norm(f.q)); f.n = r && r.a === norm(f.a) ? r.since : todayIso; }
     if (!app.updated) app.updated = app._dates.filter(Boolean).sort().pop() || '';
     delete app._dates;
     faqAnchors(app.faqs).forEach((k, i) => { app.faqs[i].k = k; });
@@ -152,6 +200,7 @@ async function main() {
   let siteUrl = String(process.env.SITE_URL || '').trim();
   if (siteUrl && !siteUrl.endsWith('/')) siteUrl += '/';
   await writePages(OUT, data, siteUrl);
+  await writeOgImages(OUT, data);
 
   const total = list.reduce((n, a) => n + a.faqs.length, 0);
   console.log(`\nSiap: ${list.length} aplikasi, ${total} soalan → _site/`);

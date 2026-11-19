@@ -257,3 +257,33 @@ html.fs-1 .hero h1{font-size:clamp(26px,6vw,34px)}
 html.fs-2 .hero h1{font-size:clamp(28px,7vw,36px)}
 html.fs-1 .src,html.fs-1 .acts,html.fs-1 .related .lbl,html.fs-1 details.full summary{font-size:14px}
 html.fs-2 .src,html.fs-2 .acts,html.fs-2 .related .lbl,html.fs-2 details.full summary{font-size:15.5px}
+
+/* ---- 🆕 baru & ⏳ tarikh tutup ---- */
+.new-badge{display:inline-block;flex:none;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle;white-space:nowrap}
+.app-tab{position:relative}
+.tab-badge{position:absolute;top:-7px;right:-4px;font-size:10.5px;font-weight:800;border-radius:999px;padding:2px 7px;background:var(--brand);color:var(--brand-ink);box-shadow:0 0 0 2px var(--bg);white-space:nowrap}
+.tab-badge.new{background:var(--accent);color:#fff}
+.tab-badge.soon{background:var(--danger);color:#fff}
+.deadline{display:inline-block;margin:12px 0 0;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:700;background:var(--brand-soft);color:var(--brand)}
+.deadline.soon{background:var(--danger-soft);color:var(--danger)}
+#view-chat .deadline{margin-bottom:2px}
+/* ---- halaman setiap soalan ---- */
+.q-page{padding-top:18px;padding-bottom:30px}
+.q-page h1{font-size:clamp(22px,5vw,30px);line-height:1.25;letter-spacing:-.02em;margin:10px 0 6px}
+.crumbs{font-size:13px;color:var(--muted)}
+.crumbs a{color:var(--muted);text-decoration:none}
+.crumbs a:hover{color:var(--brand)}
+.q-summary{margin:14px 0;padding:12px 14px;border-radius:14px;background:var(--brand-soft)}
+.q-summary b{display:block;font-size:12px;color:var(--brand);margin-bottom:4px}
+.q-summary p{margin:0}
+.q-ans{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:12px}
+.q-ans p{margin:0}
+.q-ans .sp{height:7px}
+.q-ans ul,.q-ans ol{margin:4px 0;padding-left:22px}
+.q-rel-h{font-size:16px;margin:26px 0 8px}
+.q-rel{margin:0;padding-left:20px}
+.q-rel li{margin:6px 0}
+.q-link{margin-top:10px!important;font-size:13px}
+.q-link a{text-decoration:none}
+html.fs-1 .q-ans,html.fs-1 .q-summary{font-size:17px}
+html.fs-2 .q-ans,html.fs-2 .q-summary{font-size:19.5px}

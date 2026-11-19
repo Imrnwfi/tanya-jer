@@ -54,6 +54,9 @@ Token hanya disimpan dalam browser anda. Pengunjung lain tidak boleh mengubah ap
 | **Cadangan semasa menaip** | Automatik. Soalan FAQ muncul di atas kotak taip ketika penonton menaip. |
 | **A+ & 🔊 Dengar** | Butang **A+** di atas untuk besarkan tulisan (3 saiz). Butang **🔊 Dengar** pada setiap jawapan untuk dibacakan oleh telefon. |
 | **BM / English** | Butang **EN / BM** di atas menukar bahasa paparan. Kandungan FAQ kekal seperti asal. |
+| **🆕 Baru** | Automatik. Soalan yang ditambah atau jawapannya diubah dalam 14 hari lepas ditanda 🆕. App yang baru ditambah ditanda *Baru* pada tab di laman utama. |
+| **⏳ Tarikh tutup** | Admin → **✏️ Edit** → *Tarikh tutup* + *Teks kiraan* (cth "Permohonan tutup"). Kiraan hari muncul di app dan pada tab (bila tinggal 30 hari atau kurang), dan hilang sendiri 7 hari selepas tarikh tutup. |
+| **🖼️ Gambar pratonton** | Automatik. Bila link dikongsi di WhatsApp, Facebook, Telegram atau X, keluar kad bergambar dengan nama app dan soalan. Setiap soalan ada halaman sendiri (`faq/<app>/<soalan>.html`), dan butang 🔗 Kongsi guna halaman ini. |
 | **Offline** | Automatik. FAQ yang pernah dibuka masih boleh dibaca tanpa internet, terutamanya selepas "Add to Home screen". |
 
 ## ✨ Jawapan ringkas (AI)
@@ -161,8 +164,15 @@ style.css             ← gaya dikongsi
 src/faq-core.js       ← penghurai fail + enjin carian
 scripts/build.mjs     ← tukar faqs/ → data/apps.json
 scripts/summarize.mjs ← ringkasan jawapan (Claude AI atau automatik)
-scripts/pages.mjs     ← halaman FAQ (SEO), sitemap & service worker offline
+scripts/pages.mjs     ← halaman FAQ & setiap soalan (SEO), sitemap & service worker offline
+scripts/og.mjs        ← gambar pratonton untuk media sosial
 tools/                ← kod Google Apps Script (statistik & 👍/👎)
 vendor/qrcode.js      ← penjana kod QR (MIT, Kazuhiko Arase)
 .github/workflows/    ← bina & terbit automatik ke GitHub Pages
 ```
+
+## 🙏 Kredit
+
+- Emoji dalam gambar pratonton: [Twemoji](https://github.com/jdecked/twemoji) (grafik © Twitter, Inc. dan penyumbang lain, lesen CC-BY 4.0)
+- Fon: [Plus Jakarta Sans](https://fonts.google.com/specimen/Plus+Jakarta+Sans) (SIL Open Font License)
+- Kod QR: [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) oleh Kazuhiko Arase (MIT)
