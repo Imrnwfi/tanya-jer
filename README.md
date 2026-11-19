@@ -20,7 +20,7 @@ Web app soal jawab untuk penonton video tutorial. Setiap aplikasi (Canva, CapCut
 
 ## ⚙️ Urus FAQ dari laman (paling mudah)
 
-Buka **`https://<nama-pengguna>.github.io/<nama-repo>/admin.html`** (atau tekan **⚙️ Urus FAQ** di bawah senarai app).
+Buka **`https://<nama-pengguna>.github.io/<nama-repo>/admin.html`** dan simpan sebagai bookmark. Link ini sengaja tidak dipaparkan di laman utama.
 
 - **+ Tambah app:** isi nama, emoji dan penerangan, pilih fail FAQ, kemudian tekan **Simpan & terbit**
 - **⬆️ Upload FAQ:** ganti FAQ lama, atau tambah fail baru dan kekalkan fail lama
